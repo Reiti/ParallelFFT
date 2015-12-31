@@ -1,4 +1,4 @@
-/**Complex numbers
+/**Basic DFT implementation
   *@author Michael Reitgruber
 */
 
@@ -10,7 +10,7 @@
 
 
 /*Calculates the DFT of the input vector using the naive O(N^2) algorithm*/
-void dft(double complex *out, double complex *in, int len);
+void dft(double complex *in, double complex *out, int len);
 
 int main(int argc, char *argv[])
 {
@@ -18,14 +18,14 @@ int main(int argc, char *argv[])
 
     double complex in[9] = {1,2,3,4,5,6,7,8,9};
     double complex out[9] = {0};
-    dft(out, in, 9);
+    dft(in, out, 9);
     for(int i=0; i<9; i++) {
         printf("%.4f %+.4fi\n", creal(out[i]), cimag(out[i]));
     }
 
 }
 
-void dft(double complex *out, double complex *in, int len)
+void dft(double complex *in, double complex *out, int len)
 {
     for(int i=0; i<len; i++) {
         double complex acc = 0 + 0*I;
