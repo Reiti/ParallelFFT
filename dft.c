@@ -14,12 +14,12 @@ void dft(double complex *in, double complex *out, int len);
 
 int main(int argc, char *argv[])
 {
-    //TODO Handle generator input
+    //TODO Handle generator input and different size arrays
 
-    double complex in[9] = {1,2,3,4,5,6,7,8,9};
-    double complex out[9] = {0};
-    dft(in, out, 9);
-    for(int i=0; i<9; i++) {
+    double complex in[8] = {1,2,3,4,5,6,7,8};
+    double complex out[8] = {0};
+    dft(in, out, 8);
+    for(int i=0; i<8; i++) {
         printf("%.4f %+.4fi\n", creal(out[i]), cimag(out[i]));
     }
 
