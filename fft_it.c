@@ -24,7 +24,11 @@ int main(int argc, char *argv[])
 
     double complex in[8] = {1,2,3,4,5,6,7,8};
     double complex out[8] = {0};
+
 	(void)printf("Processing FFT of Input:\n");print_cmplx_ar(in,10, 0);
+	
+		printf("----%d %d-----\n",sizeof(in),sizeof(in[0]) );
+
     fft(in, out, 8);
 	(void)printf("Result:\n");
 	print_cmplx_ar(out,10, 1);
@@ -96,7 +100,7 @@ uint32_t reverse(uint32_t index, int size)
 }
 int ispow2(int len){
 	while(len !=0){
-		if(len %2 ==1)
+		if(len %2 ==1 && len /2 != 0)
 			return 0;
 		len>>=1;
 	}
@@ -105,8 +109,9 @@ int ispow2(int len){
 void fft(double complex *in, double complex *out, int len)
 {
     /*Fill the output array in bit reversed order, rest of fft can be done inplace*/
-	if((sizeof(in)/sizeof(in[0]) != len && !ispow2(len) )){
-		(void)fprintf(stderr,"ERROR: wrong length... must be power of 2");
+	if(!ispow2(len) ){
+		(void)fprintf(stderr,"ERROR: wrong length... must be power of 2\n");
+		exit(1);
 	}
     for(int i=0; i<len; i++) {
         out[reverse(i,lg(len))] = in[i];
