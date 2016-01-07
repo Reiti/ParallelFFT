@@ -24,14 +24,14 @@ int main(int argc, char *argv[])
     double complex in[8] = {1,2,3,4,5,6,7,8};
     double complex out[8] = {0};
 
-	(void)printf("Processing FFT of Input:\n");print_cmplx_ar(in,10, 0);
+	(void)printf("Processing FFT of Input:\n");print_cmplx_ar(in,10, 0, 8);
 	
 		printf("----%d %d-----\n",sizeof(in),sizeof(in[0]) );
 
     fft(in, out, 8);
 	(void)printf("Result:\n");
-	print_cmplx_ar(out,10, 1);
-    print_comp(in, out);
+	print_cmplx_ar(out,10, 1,8);
+    print_comp(in, out,8);
 }
 
 
