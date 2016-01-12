@@ -92,10 +92,7 @@ int ispow2(int len){
 void fft(double complex *in, double complex *out, int len)
 {
     /*Fill the output array in bit reversed order, rest of fft can be done inplace*/
-	if(!ispow2(len) ){
-		(void)fprintf(stderr,"ERROR: wrong length... must be power of 2\n");
-		exit(1);
-	}
+	
     for(int i=0; i<len; i++) {
         out[reverse(i,lg(len))] = in[i];
     }
