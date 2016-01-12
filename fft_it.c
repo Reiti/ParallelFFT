@@ -17,21 +17,69 @@ void fft(double complex *in, double complex *out, int len);
 uint32_t reverse(uint32_t index, int size);
 int lg(int num);
 
+static int parse_number(char* numstring) {
+    char* endptr;
+    int thenumber = strtol(numstring, &endptr, 10);
+    if(*endptr != '\0' || thenumber < 0) {
+        (void)fprintf(stderr, "error while reading number\n");
+		exit(1); 
+    }
+    return thenumber;
+}
+
 int main(int argc, char *argv[])
 {
     //TODO Handle generator input and different size arrays
-
-    double complex in[8] = {1,2,3,4,5,6,7,8};
-    double complex out[8] = {0};
-
-	(void)printf("Processing FFT of Input:\n");print_cmplx_ar(in,10, 0, 8);
 	
-		printf("----%d %d-----\n",sizeof(in),sizeof(in[0]) );
 
-    fft(in, out, 8);
-	(void)printf("Result:\n");
-	print_cmplx_ar(out,10, 1,8);
-    print_comp(in, out,8);
+
+	char line[100];
+	
+	
+	int len = 0;
+	
+	{
+		(void)fgets(line, 100, stdin);
+		char* endptr;
+		line[strlen(line)-1] = '\0';
+		len  = strtol(line, &endptr, 10);
+		(void)printf("%s : %d\n", line, len);
+		if(*endptr != '\0' || len < 0) {
+	   	 	(void)fprintf(stderr, "error while reading numberamount\n");
+			return 1;
+	   	}
+	}
+	
+	len= parse_number(line);
+	
+	//double complex in[len]; 
+    //double complex out[len];	
+
+	double complex * in = (double complex*)malloc(len * sizeof(double complex));
+	double complex * out = (double complex*)malloc(len * sizeof(double complex));
+	
+	int counter=0;
+	while(fgets(line, 6, stdin)){
+		line[strlen(line)-1] = '\0';
+		in[counter] = parse_number(line);
+		counter++;
+	}	
+
+	if(counter != len){
+		(void)fprintf(stderr, "wrong number amount in stream\n");
+		return 1;
+	}
+
+	(void)printf("Processing FFT of Input:\n");//print_cmplx_ar(in,10, 0, len);
+	
+		//printf("----%d %d-----\n",sizeof(in),sizeof(in[0]) );
+	(void)printf("fft starts: \n");
+    fft(in, out, len);
+	(void)printf("fft done! \n");
+	free(in);free(out);
+	//(void)printf("Result:\n");
+	//print_cmplx_ar(out,10, 1,len);
+    //print_comp(in, out,len);
 }
 
 
