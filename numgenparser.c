@@ -20,7 +20,7 @@ int getNumAmount(void){
 static int parse_number(char* numstring) {
     char* endptr;
     int thenumber = strtol(numstring, &endptr, 10);
-    if(*endptr != '\0' || thenumber < 0) {
+    if(*endptr != '\0') {
         (void)fprintf(stderr, "error while reading number\n");
 		exit(1); 
     }

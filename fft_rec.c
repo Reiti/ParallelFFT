@@ -6,7 +6,8 @@
 #include <complex.h>
 #include <stdio.h>
 #include "prints.h"
-
+#include <stdlib.h>
+#include "numgenparser.h"
 
 #define PI 3.14159265358979323846
 
@@ -15,39 +16,77 @@ void fft(double complex *in, double complex *out, int len);
 
 int main(int argc, char *argv[])
 {
-    //TODO Handle generator input and different size arrays
-    double complex in[8] = {1,2,3,4,5,6,7,8};
-    double complex out[8] = {0};
-    fft(in, out, 8);
-    for(int i = 0; i<8; i++) {
-        printf("%f %+fi\n", creal(out[i]), cimag(out[i]));
-    }
+	char c;
+	int p=0;
+	while((c =getopt(argc, argv, "p")) != -1){
+		switch(c){
+			case 'p':
+				p=1;
+				break;
+			default:
+				break;
+		}
+	}
+
+
+    int len = getNumAmount();
+	
+	//double complex in[len]; 
+    //double complex out[len];	
+
+	double complex * in = (double complex*)malloc(len * sizeof(double complex));
+	double complex * out = (double complex*)malloc(len * sizeof(double complex));
+	
+	int counter = getNumbers(in);
+
+	if(counter != len){
+		(void)fprintf(stderr, "wrong number amount in stream\n");
+		return 1;
+	}
+	if(p){
+		(void)printf("processing input of: \n");print_cmplx_ar(in, 10, 1, len);
+	}	
+    (void)printf("fft starts: \n");
+    fft(in, out, len);
+	(void)printf("fft done! \n");
+	if(p){
+		(void)printf("Result:\n");
+		print_cmplx_ar(out,10, 1,len);
+    	//print_comp(in, out,len);/*useless with this rec mehtod*/
+	}
+
+	free(in);free(out);
 
 }
 
 
 
-void fft_help(double complex *swap, double complex *out, int len, int step)
+void fft_help(double complex *dc1, double complex *dc2, int len, int step)
 {
     if(step >= len) {
       return;
     }
-
-    fft_help(out, swap, len, step*2); //swap arrays so we can twiddle without crosstalk
-    fft_help(out+step, swap+step, len, step*2);
+	/*basicly this calcs FFT for the odd and even part and stores that in one array,
+	recursive calls later use these previous calculations, to calculate further... 
+	that's why the two arrays get swapped
+	it's easily to demonstrate if you draw youself the tree of recursive calls. Each node 
+	with two children gets their needed FFT information, calculated by the children, 
+	stored in dc2. Each node self stores the calculated information in dc1, which
+	is dc2 in all parents and the 'out' array in the original call*/
+    fft_help(dc2, dc1, len, step*2);
+    fft_help(dc2+step, dc1+step, len, step*2);
 
     for(int k=0; k<len/2; k+=step) {
-      double complex twiddle = cexp(-2*PI*I*k/len)*out[2*k + step];
-      swap[k] = out[2*k] + twiddle;
-      swap[k + len/2] = out[2*k] - twiddle;
+      double complex twiddle = cexp(-2*PI*I*k/len)*dc2[2*k + step];
+      dc1[k] = dc2[2*k] + twiddle;
+      dc1[k + len/2] = dc2[2*k] - twiddle;
     }
 }
-
 void fft(double complex *in, double complex *out, int len)
 {
     for(int i=0; i<len; i++) {
       out[i] = in[i];
     }
-
+	//out is right, but in wont be the same later
     fft_help(out, in, len, 1);
 }
