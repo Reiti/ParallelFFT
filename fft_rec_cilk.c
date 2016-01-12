@@ -12,6 +12,7 @@
 #include <cilk/cilk.h>
 #include <cilk/cilk_api.h>
 
+
 #define PI 3.14159265358979323846
 
 void fft(double complex *in, double complex *out, int len);
@@ -19,6 +20,8 @@ void fft(double complex *in, double complex *out, int len);
 
 int main(int argc, char *argv[])
 {
+
+	printf("Total number of workers: %d\n",__cilkrts_get_nworkers());
 	char c;
 	int p=0;
 	while((c =getopt(argc, argv, "p")) != -1){
