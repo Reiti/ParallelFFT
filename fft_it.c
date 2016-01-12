@@ -11,21 +11,16 @@
 #include <string.h>
 #include <stdarg.h>
 #include "prints.h"
+#include "numgenparser.h"
+
+
 #define PI 3.14159265358979323846
 
 void fft(double complex *in, double complex *out, int len);
 uint32_t reverse(uint32_t index, int size);
 int lg(int num);
 
-static int parse_number(char* numstring) {
-    char* endptr;
-    int thenumber = strtol(numstring, &endptr, 10);
-    if(*endptr != '\0' || thenumber < 0) {
-        (void)fprintf(stderr, "error while reading number\n");
-		exit(1); 
-    }
-    return thenumber;
-}
+
 
 int main(int argc, char *argv[])
 {
@@ -33,24 +28,8 @@ int main(int argc, char *argv[])
 	
 
 
-	char line[100];
 	
-	
-	int len = 0;
-	
-	{
-		(void)fgets(line, 100, stdin);
-		char* endptr;
-		line[strlen(line)-1] = '\0';
-		len  = strtol(line, &endptr, 10);
-		(void)printf("%s : %d\n", line, len);
-		if(*endptr != '\0' || len < 0) {
-	   	 	(void)fprintf(stderr, "error while reading numberamount\n");
-			return 1;
-	   	}
-	}
-	
-	len= parse_number(line);
+	int len = getNumAmount();
 	
 	//double complex in[len]; 
     //double complex out[len];	
@@ -58,17 +37,15 @@ int main(int argc, char *argv[])
 	double complex * in = (double complex*)malloc(len * sizeof(double complex));
 	double complex * out = (double complex*)malloc(len * sizeof(double complex));
 	
-	int counter=0;
-	while(fgets(line, 6, stdin)){
-		line[strlen(line)-1] = '\0';
-		in[counter] = parse_number(line);
-		counter++;
-	}	
+	int counter = getNumbers(in);
 
 	if(counter != len){
 		(void)fprintf(stderr, "wrong number amount in stream\n");
 		return 1;
 	}
+	
+
+
 
 	(void)printf("Processing FFT of Input:\n");//print_cmplx_ar(in,10, 0, len);
 	
