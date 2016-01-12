@@ -7,6 +7,7 @@
 #include <stdio.h>
 #include "prints.h"
 #include <stdlib.h>
+#include <time.h>
 #include "numgenparser.h"
 
 #define PI 3.14159265358979323846
@@ -30,13 +31,13 @@ int main(int argc, char *argv[])
 
 
     int len = getNumAmount();
-	
-	//double complex in[len]; 
-    //double complex out[len];	
+
+	//double complex in[len];
+    //double complex out[len];
 
 	double complex * in = (double complex*)malloc(len * sizeof(double complex));
 	double complex * out = (double complex*)malloc(len * sizeof(double complex));
-	
+
 	int counter = getNumbers(in);
 
 	if(counter != len){
@@ -45,10 +46,23 @@ int main(int argc, char *argv[])
 	}
 	if(p){
 		(void)printf("processing input of: \n");print_cmplx_ar(in, 10, 1, len);
-	}	
-    (void)printf("fft starts: \n");
-    fft(in, out, len);
-	(void)printf("fft done! \n");
+	}
+
+	struct timespec time;
+	unsigned long tdnano;
+	time_t tdsec;
+  (void)printf("fft starts: \n");
+	(void) clock_gettime(CLOCK_REALTIME, &time);
+  tdnano = time.tv_nsec;
+  tdsec = time.tv_sec;
+  fft(in, out, len);
+	(void) clock_gettime(CLOCK_REALTIME, &time);
+  tdnano = time.tv_nsec - tdnano;
+  tdsec = time.tv_sec - tdsec;
+  if(tdsec == 0)
+	  (void)printf("fft done! Took %ld nanoseconds\n", tdnano);
+  else
+    (void)printf("fft done! Took %d seconds\n", (int)tdsec);
 	if(p){
 		(void)printf("Result:\n");
 		print_cmplx_ar(out,10, 1,len);
@@ -67,10 +81,10 @@ void fft_help(double complex *dc1, double complex *dc2, int len, int step)
       return;
     }
 	/*basicly this calcs FFT for the odd and even part and stores that in one array,
-	recursive calls later use these previous calculations, to calculate further... 
+	recursive calls later use these previous calculations, to calculate further...
 	that's why the two arrays get swapped
-	it's easily to demonstrate if you draw youself the tree of recursive calls. Each node 
-	with two children gets their needed FFT information, calculated by the children, 
+	it's easily to demonstrate if you draw youself the tree of recursive calls. Each node
+	with two children gets their needed FFT information, calculated by the children,
 	stored in dc2. Each node self stores the calculated information in dc1, which
 	is dc2 in all parents and the 'out' array in the original call*/
     fft_help(dc2, dc1, len, step*2);
