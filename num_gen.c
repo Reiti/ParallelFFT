@@ -56,7 +56,7 @@ int main(int argc, char  **argv){
     }
 
 	srand(time(NULL));
-
+	(void)fprintf(stream, "%d\n", (int)pow(2,exp));
 	for(int i =0;i< pow(2, exp);i++){
 		(void)fprintf(stream, "%d\n",rand() % 1024);
 	}
