@@ -10,6 +10,7 @@
 #include <stdint.h>
 #include <string.h>
 #include <stdarg.h>
+#include <time.h>
 #include "prints.h"
 #include "numgenparser.h"
 
@@ -34,41 +35,54 @@ int main(int argc, char *argv[])
 			default:
 				break;
 		}
-	}	
+	}
 
 
-	
+
 	int len = getNumAmount();
-	
-	//double complex in[len]; 
-    //double complex out[len];	
+
+	//double complex in[len];
+    //double complex out[len];
 
 	double complex * in = (double complex*)malloc(len * sizeof(double complex));
 	double complex * out = (double complex*)malloc(len * sizeof(double complex));
-	
+
 	int counter = getNumbers(in);
 
 	if(counter != len){
 		(void)fprintf(stderr, "wrong number amount in stream\n");
 		return 1;
 	}
-	
+
 
 
 	if(p){
 		(void)printf("Processing FFT of Input:\n");print_cmplx_ar(in,10,1 , len);
 	}
 		//printf("----%d %d-----\n",sizeof(in),sizeof(in[0]) );
+
+
+  struct timespec time;
+  unsigned long tdnano;
+  time_t tdsec;
 	(void)printf("fft starts: \n");
-    fft(in, out, len);
-	(void)printf("fft done! \n");
-	
+  (void) clock_gettime(CLOCK_REALTIME, &time);
+  tdnano = time.tv_nsec;
+  tdsec = time.tv_sec;
+  fft(in, out, len);
+  (void) clock_gettime(CLOCK_REALTIME, &time);
+  tdnano = time.tv_nsec - tdnano;
+  tdsec = time.tv_sec - tdsec;
+  if(tdsec == 0)
+	  (void)printf("fft done! Took %ld nanoseconds\n", tdnano);
+  else
+    (void)printf("fft done! Took %d seconds\n", (int)tdsec);
 	if(p){
 		(void)printf("Result:\n");
 	//print_cmplx_ar(out,10, 1,len);
     	print_comp(in, out,len);
 	}
-	
+
 	free(in);free(out);
 }
 
@@ -105,7 +119,7 @@ int ispow2(int len){
 void fft(double complex *in, double complex *out, int len)
 {
     /*Fill the output array in bit reversed order, rest of fft can be done inplace*/
-	
+
     for(int i=0; i<len; i++) {
         out[reverse(i,lg(len))] = in[i];
     }
