@@ -7,7 +7,7 @@ OBJECTFILES = dft.o fft_it.o fft_rec.o fft_rec_cilk.o fft_rec_omp.o prints.o num
 EXECS = dft fft_it fft_rec num_gen fft_rec_cilk fft_rec_omp
 .PHONY: all clean
 
-all: dft fft_it fft_rec num_gen fft_rec_cilk
+all: dft fft_it fft_rec num_gen fft_rec_cilk fft_rec_omp
 
 num_gen: num_gen.o
 	$(CC)  -o $@ $^ $(LDFLAGS)
