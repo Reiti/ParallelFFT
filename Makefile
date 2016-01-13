@@ -1,5 +1,5 @@
 #fft makefile
-CC = gcc
+CC = gcc-4.9
 DEFS = -D_XOPEN_SOURCE=500 -D_BSD_SOURCE
 CFLAGS = -Wall -O3 -g -std=c99 -pedantic $(DEFS)
 LDFLAGS = -lrt -pthread -lm
