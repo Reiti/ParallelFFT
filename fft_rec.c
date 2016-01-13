@@ -86,6 +86,8 @@ void fft_help(double complex *dc1, double complex *dc2, int len, int step)
     if(step >= len) {
       return;
     }
+
+
 	/*basicly this calcs FFT for the odd and even part and stores that in one array,
 	recursive calls later use these previous calculations, to calculate further...
 	that's why the two arrays get swapped

@@ -60,7 +60,7 @@ int main(int argc, char *argv[])
 
 	double timeUsed = 0.0;
   (void)printf("fft starts: \n");
-	#pragma omp parallel
+	#pragma omp parallel shared(timeUsed, in, out, len)
 	{
 		#pragma omp single
 		{
@@ -88,18 +88,11 @@ void fft_help(double complex *dc1, double complex *dc2, int len, int step)
 	  if(step >= len) {
 	    return;
 	  }
-
-
-		/*basicly this calcs FFT for the odd and even part and stores that in one array,
-		recursive calls later use these previous calculations, to calculate further...
-		that's why the two arrays get swapped
-		it's easily to demonstrate if you draw youself the tree of recursive calls. Each node
-		with two children gets their needed FFT information, calculated by the children,
-		stored in dc2. Each node self stores the calculated information in dc1, which
-		is dc2 in all parents and the 'out' array in the original call*/
-		#pragma omp task
+		/*execute sequentially after a certain recursion depth
+			cutoff point determined experimentially*/
+		#pragma omp task if(step < len/8)
 	  fft_help(dc2, dc1, len, step*2);
-		#pragma omp task
+		#pragma omp task if(step < len/8)
 	  fft_help(dc2+step, dc1+step, len, step*2);
 		#pragma omp taskwait
 
