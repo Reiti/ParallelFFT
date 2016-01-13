@@ -15,6 +15,8 @@
 
 #define PI 3.14159265358979323846
 
+double complex* rou;
+
 void fft(double complex *in, double complex *out, int len);
 
 
@@ -49,6 +51,14 @@ int main(int argc, char *argv[])
 		(void)fprintf(stderr, "wrong number amount in stream\n");
 		return 1;
 	}
+
+	rou = (double complex*)malloc(len*sizeof(double complex));
+	for(int i=0;i<len;i++)
+		rou[i] = cexp(-2*PI*I*i/len);
+
+
+
+
 	if(p){
 		(void)printf("processing input of: \n");print_cmplx_ar(in, 10, 1, len);
 	}
@@ -56,6 +66,7 @@ int main(int argc, char *argv[])
 	struct timespec time;
 	unsigned long tdnano;
 	time_t tdsec;
+	
   (void)printf("fft starts: \n");
 	(void) clock_gettime(CLOCK_REALTIME, &time);
   tdnano = time.tv_nsec;
@@ -74,11 +85,12 @@ int main(int argc, char *argv[])
     	//print_comp(in, out,len);/*useless with this rec mehtod*/
 	}
 
-	free(in);free(out);
+	free(in);free(out);free(rou);
 
 }
 
-
+/*roots of unity*/
+double complex *rou;
 
 void fft_help(double complex *dc1, double complex *dc2, int len, int step)
 {
@@ -96,15 +108,18 @@ void fft_help(double complex *dc1, double complex *dc2, int len, int step)
     cilk_spawn fft_help(dc2+step, dc1+step, len, step*2);
 		cilk_sync;
     for(int k=0; k<len/2; k+=step) {
-      double complex twiddle = cexp(-2*PI*I*k/len)*dc2[2*k + step];
+      double complex twiddle = rou[k]*dc2[2*k + step];
+		
       dc1[k] = dc2[2*k] + twiddle;
       dc1[k + len/2] = dc2[2*k] - twiddle;
     }
 }
 void fft(double complex *in, double complex *out, int len)
 {
+
     for(int i=0; i<len; i++) {
-      out[i] = in[i];
+		out[i] = in[i];
+
     }
 	//out is right, but in wont be the same later
     fft_help(out, in, len, 1);
