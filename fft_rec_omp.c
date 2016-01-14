@@ -1,4 +1,4 @@
-/**Non-Parallel recursive FFT implementation using the Cooley-Tukey algorithm
+/**Parallel recursive FFT implementation of the Cooley-Tukey algorithm using OpenMP
   *@author Michael Reitgruber
 */
 

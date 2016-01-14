@@ -1,4 +1,4 @@
-/**Non-Parallel recursive FFT implementation using the Cooley-Tukey algorithm
+/**Parallel recursive FFT implementation of the Cooley-Tukey algorithm using Cilk
   *@author Michael Reitgruber
 */
 
@@ -66,7 +66,7 @@ int main(int argc, char *argv[])
 	struct timespec time;
 	unsigned long tdnano;
 	time_t tdsec;
-	
+
   (void)printf("fft starts: \n");
 	(void) clock_gettime(CLOCK_REALTIME, &time);
   tdnano = time.tv_nsec;
@@ -109,7 +109,7 @@ void fft_help(double complex *dc1, double complex *dc2, int len, int step)
 		cilk_sync;
     for(int k=0; k<len/2; k+=step) {
       double complex twiddle = rou[k]*dc2[2*k + step];
-		
+
       dc1[k] = dc2[2*k] + twiddle;
       dc1[k + len/2] = dc2[2*k] - twiddle;
     }
