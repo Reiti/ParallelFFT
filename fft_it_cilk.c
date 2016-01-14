@@ -1,4 +1,4 @@
-/**Parallel iterative FFT implementation of the Cooley-Tukey algorithm using OpenMP
+/**Parallel iterative FFT implementation of the Cooley-Tukey algorithm using cilk
   *@author Michael Reitgruber
 */
 
@@ -13,8 +13,8 @@
 #include <time.h>
 #include "prints.h"
 #include "numgenparser.h"
-#include <omp.h>
-
+#include <cilk/cilk.h>
+#include <cilk/cilk_api.h>
 
 #define PI 3.14159265358979323846
 
@@ -28,10 +28,6 @@ int lg(int num);
 
 int main(int argc, char *argv[])
 {
-
-  omp_set_num_threads(omp_get_max_threads());
-	omp_set_nested(1);
-
     char c;
 	int p=0;
 	while((c =getopt(argc, argv, "p"))!=-1){
@@ -70,12 +66,22 @@ int main(int argc, char *argv[])
 	}
 		//printf("----%d %d-----\n",sizeof(in),sizeof(in[0]) );
 
-  double timeUsed = 0.0;
+
+  struct timespec time;
+  unsigned long tdnano;
+  time_t tdsec;
 	(void)printf("fft starts: \n");
-  timeUsed=omp_get_wtime();
+  (void) clock_gettime(CLOCK_REALTIME, &time);
+  tdnano = time.tv_nsec;
+  tdsec = time.tv_sec;
   fft(in, out, len);
-  timeUsed=omp_get_wtime() - timeUsed;
-  (void)printf("fft done! Took %f seconds\n", timeUsed);
+  (void) clock_gettime(CLOCK_REALTIME, &time);
+  tdnano = time.tv_nsec - tdnano;
+  tdsec = time.tv_sec - tdsec;
+  if(tdsec == 0)
+	  (void)printf("fft done! Took %ld nanoseconds\n", tdnano);
+  else
+    (void)printf("fft done! Took %d seconds\n", (int)tdsec);
 	if(p){
 		(void)printf("Result:\n");
 	//print_cmplx_ar(out,10, 1,len);
@@ -115,6 +121,18 @@ int ispow2(int len){
 	}
 	return 1;
 }
+
+void loop_helper(double complex *in, double complex *out, int len, int k, int i)
+{
+  double complex omega = rou[k];
+  for(int j = 0; j < len/i; j++) {
+      double complex twiddle = omega * out[j*i + k + i/2];
+      out[j*i + k + i/2] = out[j*i + k] - twiddle;
+      out[j*i + k] = out[j*i + k] + twiddle;
+  }
+}
+
+
 void fft(double complex *in, double complex *out, int len)
 {
     /*Fill the output array in bit reversed order, rest of fft can be done inplace*/
@@ -124,14 +142,9 @@ void fft(double complex *in, double complex *out, int len)
     }
 
    for(int i = 2; i <= len; i *= 2)  {
-        #pragma omp parallel for schedule(dynamic)
         for(int k = 0; k < i/2; k++) {
-            double complex omega = rou[k];
-            for(int j = 0; j < len/i; j++) {
-                double complex twiddle = omega * out[j*i + k + i/2];
-                out[j*i + k + i/2] = out[j*i + k] - twiddle;
-                out[j*i + k] = out[j*i + k] + twiddle;
-            }
+          cilk_spawn loop_helper(in, out, len, k, i);
         }
+        cilk_sync;
     }
 }
