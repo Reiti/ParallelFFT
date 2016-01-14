@@ -66,22 +66,15 @@ int main(int argc, char *argv[])
 	}
 		//printf("----%d %d-----\n",sizeof(in),sizeof(in[0]) );
 
-
   struct timespec time;
-  unsigned long tdnano;
-  time_t tdsec;
+  int tdmicros = 0;
 	(void)printf("fft starts: \n");
   (void) clock_gettime(CLOCK_REALTIME, &time);
-  tdnano = time.tv_nsec;
-  tdsec = time.tv_sec;
+  tdmicros = ((int)time.tv_sec*1000000) + time.tv_nsec/1000;
   fft(in, out, len);
   (void) clock_gettime(CLOCK_REALTIME, &time);
-  tdnano = time.tv_nsec - tdnano;
-  tdsec = time.tv_sec - tdsec;
-  if(tdsec == 0)
-	  (void)printf("fft done! Took %ld nanoseconds\n", tdnano);
-  else
-    (void)printf("fft done! Took %d seconds\n", (int)tdsec);
+  tdmicros = (((int)time.tv_sec*1000000) + time.tv_nsec/1000)-tdmicros;
+	(void)printf("fft done! Took %d microseconds\n", tdmicros);
 	if(p){
 		(void)printf("Result:\n");
 	//print_cmplx_ar(out,10, 1,len);
@@ -142,7 +135,7 @@ void fft(double complex *in, double complex *out, int len)
     }
 
    for(int i = 2; i <= len; i *= 2)  {
-        for(int k = 0; k < i/2; k++) {
+        for(int k = 0; k < i/2; k++) {  //TODO: Implement threshold for sequentiality (or chunksizes, whichever is faster)
           cilk_spawn loop_helper(in, out, len, k, i);
         }
         cilk_sync;

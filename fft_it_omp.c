@@ -75,7 +75,9 @@ int main(int argc, char *argv[])
   timeUsed=omp_get_wtime();
   fft(in, out, len);
   timeUsed=omp_get_wtime() - timeUsed;
-  (void)printf("fft done! Took %f seconds\n", timeUsed);
+
+  int tdmicros = (int)(timeUsed*1000000);
+  (void)printf("fft done! Took %d microseconds\n", tdmicros);
 	if(p){
 		(void)printf("Result:\n");
 	//print_cmplx_ar(out,10, 1,len);
