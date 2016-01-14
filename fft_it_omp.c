@@ -1,4 +1,4 @@
-/**Non-Parallel iterative FFT implementation using the Cooley-Tukey algorithm
+/**Parallel iterative FFT implementation of the Cooley-Tukey algorithm using OpenMP
   *@author Michael Reitgruber
 */
 
@@ -13,6 +13,7 @@
 #include <time.h>
 #include "prints.h"
 #include "numgenparser.h"
+#include <omp.h>
 
 
 #define PI 3.14159265358979323846
@@ -27,6 +28,10 @@ int lg(int num);
 
 int main(int argc, char *argv[])
 {
+
+  omp_set_num_threads(omp_get_max_threads());
+	omp_set_nested(1);
+
     char c;
 	int p=0;
 	while((c =getopt(argc, argv, "p"))!=-1){
@@ -65,15 +70,13 @@ int main(int argc, char *argv[])
 	}
 		//printf("----%d %d-----\n",sizeof(in),sizeof(in[0]) );
 
-
-  struct timespec time;
-  int tdmicros = 0;
-  (void)printf("fft starts: \n");
-  (void) clock_gettime(CLOCK_REALTIME, &time);
-  tdmicros = ((int)time.tv_sec*1000000) + time.tv_nsec/1000;
+  double timeUsed = 0.0;
+	(void)printf("fft starts: \n");
+  timeUsed=omp_get_wtime();
   fft(in, out, len);
-  (void) clock_gettime(CLOCK_REALTIME, &time);
-  tdmicros = (((int)time.tv_sec*1000000) + time.tv_nsec/1000)-tdmicros;
+  timeUsed=omp_get_wtime() - timeUsed;
+
+  int tdmicros = (int)(timeUsed*1000000);
   (void)printf("fft done! Took %d microseconds\n", tdmicros);
 	if(p){
 		(void)printf("Result:\n");
@@ -123,6 +126,7 @@ void fft(double complex *in, double complex *out, int len)
     }
 
    for(int i = 2; i <= len; i *= 2)  {
+        #pragma omp parallel for schedule(dynamic)
         for(int k = 0; k < i/2; k++) {
             double complex omega = rou[k];
             for(int j = 0; j < len/i; j++) {

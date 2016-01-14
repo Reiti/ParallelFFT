@@ -37,10 +37,10 @@ int main(int argc, char *argv[])
 	MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 	MPI_Comm_size(MPI_COMM_WORLD, &size);
 	int len = -1;
-	
+
 	if(rank == 0){
 		len = getNumAmount();
-		for(int i=1;i<size;i++)	
+		for(int i=1;i<size;i++)
 			MPI_Send(&len, 1, MPI_INT,i, 1,MPI_COMM_WORLD);
 	}else{
 		MPI_Status status;
@@ -52,7 +52,7 @@ int main(int argc, char *argv[])
 		return 1;
 	}
 
-    
+
 
 	//double complex in[len];
     //double complex out[len];
@@ -62,7 +62,7 @@ int main(int argc, char *argv[])
 	int counter=-2;
 	if(rank == 0){
 		counter = getNumbers(in);
-		for(int i=1;i<size;i++){	
+		for(int i=1;i<size;i++){
 			MPI_Send(&counter, 1, MPI_INT,i, 1,MPI_COMM_WORLD);
 			MPI_Send(in, len, MPI_DOUBLE_COMPLEX,i, 1,MPI_COMM_WORLD);
 		}
@@ -72,7 +72,7 @@ int main(int argc, char *argv[])
 		MPI_Recv(in, len, MPI_DOUBLE_COMPLEX, 0, 1, MPI_COMM_WORLD, &status);
 	}
 	MPI_Barrier(MPI_COMM_WORLD);
-	
+
 
 	if(counter != len){
 		(void)fprintf(stderr, "wrong number amount in stream... %d %d\n", counter,len);

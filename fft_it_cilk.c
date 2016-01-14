@@ -1,4 +1,4 @@
-/**Non-Parallel iterative FFT implementation using the Cooley-Tukey algorithm
+/**Parallel iterative FFT implementation of the Cooley-Tukey algorithm using cilk
   *@author Michael Reitgruber
 */
 
@@ -13,7 +13,8 @@
 #include <time.h>
 #include "prints.h"
 #include "numgenparser.h"
-
+#include <cilk/cilk.h>
+#include <cilk/cilk_api.h>
 
 #define PI 3.14159265358979323846
 
@@ -65,16 +66,15 @@ int main(int argc, char *argv[])
 	}
 		//printf("----%d %d-----\n",sizeof(in),sizeof(in[0]) );
 
-
   struct timespec time;
   int tdmicros = 0;
-  (void)printf("fft starts: \n");
+	(void)printf("fft starts: \n");
   (void) clock_gettime(CLOCK_REALTIME, &time);
   tdmicros = ((int)time.tv_sec*1000000) + time.tv_nsec/1000;
   fft(in, out, len);
   (void) clock_gettime(CLOCK_REALTIME, &time);
   tdmicros = (((int)time.tv_sec*1000000) + time.tv_nsec/1000)-tdmicros;
-  (void)printf("fft done! Took %d microseconds\n", tdmicros);
+	(void)printf("fft done! Took %d microseconds\n", tdmicros);
 	if(p){
 		(void)printf("Result:\n");
 	//print_cmplx_ar(out,10, 1,len);
@@ -114,6 +114,18 @@ int ispow2(int len){
 	}
 	return 1;
 }
+
+void loop_helper(double complex *in, double complex *out, int len, int k, int i)
+{
+  double complex omega = rou[k];
+  for(int j = 0; j < len/i; j++) {
+      double complex twiddle = omega * out[j*i + k + i/2];
+      out[j*i + k + i/2] = out[j*i + k] - twiddle;
+      out[j*i + k] = out[j*i + k] + twiddle;
+  }
+}
+
+
 void fft(double complex *in, double complex *out, int len)
 {
     /*Fill the output array in bit reversed order, rest of fft can be done inplace*/
@@ -123,13 +135,9 @@ void fft(double complex *in, double complex *out, int len)
     }
 
    for(int i = 2; i <= len; i *= 2)  {
-        for(int k = 0; k < i/2; k++) {
-            double complex omega = rou[k];
-            for(int j = 0; j < len/i; j++) {
-                double complex twiddle = omega * out[j*i + k + i/2];
-                out[j*i + k + i/2] = out[j*i + k] - twiddle;
-                out[j*i + k] = out[j*i + k] + twiddle;
-            }
+        for(int k = 0; k < i/2; k++) {  //TODO: Implement threshold for sequentiality (or chunksizes, whichever is faster)
+          cilk_spawn loop_helper(in, out, len, k, i);
         }
+        cilk_sync;
     }
 }

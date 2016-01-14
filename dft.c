@@ -51,20 +51,14 @@ int main(int argc, char *argv[])
 	}
 		//printf("----%d %d-----\n",sizeof(in),sizeof(in[0]) );
   struct timespec time;
-  unsigned long tdnano;
-  time_t tdsec;
-	(void)printf("dft starts: \n");
+  int tdmicros = 0;
+	(void)printf("fft starts: \n");
   (void) clock_gettime(CLOCK_REALTIME, &time);
-  tdnano = time.tv_nsec;
-  tdsec = time.tv_sec;
+  tdmicros = ((int)time.tv_sec*1000000) + time.tv_nsec/1000;
   dft(in, out, len);
   (void) clock_gettime(CLOCK_REALTIME, &time);
-  tdnano = time.tv_nsec - tdnano;
-  tdsec = time.tv_sec - tdsec;
-  if(tdsec == 0)
-	  (void)printf("dft done! Took %ld nanoseconds\n", tdnano);
-  else
-    (void)printf("dft done! Took %d seconds\n", (int)tdsec);
+  tdmicros = (((int)time.tv_sec*1000000) + time.tv_nsec/1000)-tdmicros;
+	(void)printf("fft done! Took %d microseconds\n", tdmicros);
 
 	if(p){
 		(void)printf("Result:\n");
@@ -73,7 +67,6 @@ int main(int argc, char *argv[])
 	}
 
 	free(in);free(out);
-
 
 }
 
