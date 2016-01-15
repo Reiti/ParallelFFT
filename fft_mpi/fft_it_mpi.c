@@ -14,7 +14,7 @@
 #include "prints.h"
 #include "numgenparser.h"
 
-#include <mpi/mpi.h>
+#include "/opt/NECmpi/gcc/1.3.1/include/mpi.h"
 
 #define PI 3.14159265358979323846
 
@@ -196,8 +196,10 @@ int length = pow(2,len);
         for(int k = 0; k < i/2; k++) {
             double complex omega = rou[k];
 			int tbd = length/i/size;
+			int skips=2;
 			while(tbd==0){
-				tbd = length/i/(size/2);
+				tbd = length/i/(size/skips);
+				skips*=2;
 			}	
             for(int j = rank * tbd; j < (rank+1)*tbd; j++) {
                 double complex twiddle = omega * out[j*i + k + i/2];
