@@ -187,15 +187,18 @@ int ispow2(int len){
 void fft(int len)
 {
     /*Fill the output array in bit reversed order, rest of fft can be done inplace*/
-
-    for(int i=0; i<pow(2,len); i++) {
+int length = pow(2,len);
+    for(int i=0; i<length; i++) {
         out[reverse(i,len)] = in[i];
     }
-
-   for(int i = 2; i <= pow(2,len); i *= 2)  {
+	
+   for(int i = 2; i < length; i *= 2)  {
         for(int k = 0; k < i/2; k++) {
             double complex omega = rou[k];
-			int tbd = pow(2,len)/i/size;
+			int tbd = length/i/size;
+			while(tbd==0){
+				tbd = length/i/(size/2);
+			}	
             for(int j = rank * tbd; j < (rank+1)*tbd; j++) {
                 double complex twiddle = omega * out[j*i + k + i/2];
                 out[j*i + k + i/2] = out[j*i + k] - twiddle;
@@ -204,21 +207,24 @@ void fft(int len)
 			MPI_Barrier(MPI_COMM_WORLD);
 			MPI_Status status;
 			if(rank ==0){
-				for(int r=1;r<size;r++)
-					MPI_Recv(out+r*tbd*i+k, pow(2,len)-rank*tbd, MPI_DOUBLE_COMPLEX,
+				for(int r=1;r<size;r++){
+					if(r*tbd*i+k >= length)break;
+					MPI_Recv(out+r*tbd*i+k, length-rank*tbd, MPI_DOUBLE_COMPLEX,
 							 r, 1, MPI_COMM_WORLD, &status);
+				}
 								
 			}else{
-					MPI_Send(out+rank*tbd*i+k, pow(2,len)-rank*tbd, MPI_DOUBLE_COMPLEX,
+				if(rank*tbd*i+k < length)
+					MPI_Send(out+rank*tbd*i+k, length-rank*tbd, MPI_DOUBLE_COMPLEX,
 							0, 1,MPI_COMM_WORLD);
 			}
 			MPI_Barrier(MPI_COMM_WORLD);
 			if(rank==0){
 				for(int r=1;r<size;r++)
-						MPI_Send(out, pow(2,len), MPI_DOUBLE_COMPLEX,
+						MPI_Send(out, length, MPI_DOUBLE_COMPLEX,
 							r, 1,MPI_COMM_WORLD);
 			}else{
-				MPI_Recv(out, pow(2,len), MPI_DOUBLE_COMPLEX,
+				MPI_Recv(out, length, MPI_DOUBLE_COMPLEX,
 							 0, 1, MPI_COMM_WORLD, &status);
 			}
 			MPI_Barrier(MPI_COMM_WORLD);
