@@ -197,7 +197,7 @@ void merge(double complex *rec, int r, int i, int length){
 	//print_comp(rec, out, length);
 }
 
-void synch(int i, int tbd, int length){
+void synch(int i, int length){
 	if(i==2){
 		MPI_Bcast(out, length, MPI_DOUBLE_COMPLEX, 0, MPI_COMM_WORLD);
 		return;
@@ -265,13 +265,7 @@ void fft(int len)
     }
 	
    for(int i = 2; i < length; i *= 2)  {	
-		int tbd = i/2/size;
-		if(!tbd){
-			tbd=1;			
-		}
 		//(void)printf("Ich %d berechne index: ",rank);
-
-
         for(int k =rank; k < i/2; k+=size) {
 	        double complex omega = rou[k];
             for(int j = 0;j < length/i ;j++) {
@@ -282,7 +276,7 @@ void fft(int len)
 	
 		}
 		MPI_Barrier(MPI_COMM_WORLD);
-		synch(i, tbd, length);
+		synch(i, length);
 		MPI_Barrier(MPI_COMM_WORLD);
     }
 	MPI_Status status;	
