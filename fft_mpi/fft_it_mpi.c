@@ -14,8 +14,8 @@
 #include "prints.h"
 #include "numgenparser.h"
 
-#include "/opt/NECmpi/gcc/1.3.1/include/mpi.h"
-
+//#include "/opt/NECmpi/gcc/1.3.1/include/mpi.h"
+#include <mpi/mpi.h>
 #define PI 3.14159265358979323846
 
 double complex* rou;
@@ -61,7 +61,7 @@ int main(int argc, char *argv[])
 	}
 
 
-
+	MPI_Barrier(MPI_COMM_WORLD);
 	
 	
 	int len = -1;
@@ -184,52 +184,56 @@ int ispow2(int len){
 	}
 	return 1;
 }
+
+void synch(int i, int tbd, int length){
+	MPI_Status status;
+	if(rank ==0){
+		for(int r=1;r<size;r++){
+			if(r >=i/2)break;
+			MPI_Recv(out+r*tbd, length-rank*tbd,														 MPI_DOUBLE_COMPLEX, r, 1, MPI_COMM_WORLD,
+					 &status);
+		}						
+	}else{
+		if(rank < i/2)
+			MPI_Send(out+rank*tbd, length-rank*tbd,
+ 					MPI_DOUBLE_COMPLEX, 0, 1,MPI_COMM_WORLD);
+	}
+	MPI_Barrier(MPI_COMM_WORLD);
+	if(rank==0){
+		for(int r=1;r<size;r++)
+				MPI_Send(out, length, MPI_DOUBLE_COMPLEX,
+					r, 1,MPI_COMM_WORLD);
+	}else{
+		MPI_Recv(out, length, MPI_DOUBLE_COMPLEX,
+					 0, 1, MPI_COMM_WORLD, &status);
+	}
+}
+
 void fft(int len)
 {
     /*Fill the output array in bit reversed order, rest of fft can be done inplace*/
-int length = pow(2,len);
+	int length = pow(2,len);
     for(int i=0; i<length; i++) {
         out[reverse(i,len)] = in[i];
     }
 	
    for(int i = 2; i < length; i *= 2)  {
-        for(int k = 0; k < i/2; k++) {
+		MPI_Barrier(MPI_COMM_WORLD);
+		int tbd = i/2/size;
+		if(!tbd){
+			if(rank >= i/2) continue;
+			tbd=1;
+		}
+        for(int k =rank * tbd; k < (rank+1)*tbd; k++) {
             double complex omega = rou[k];
-			int tbd = length/i/size;
-			int skips=2;
-			while(tbd==0){
-				tbd = length/i/(size/skips);
-				skips*=2;
-			}	
-            for(int j = rank * tbd; j < (rank+1)*tbd; j++) {
+            for(int j = 0;j<length/i ;j++) {
                 double complex twiddle = omega * out[j*i + k + i/2];
                 out[j*i + k + i/2] = out[j*i + k] - twiddle;
                 out[j*i + k] = out[j*i + k] + twiddle;
             }
-			MPI_Barrier(MPI_COMM_WORLD);
-			MPI_Status status;
-			if(rank ==0){
-				for(int r=1;r<size;r++){
-					if(r*tbd*i+k >= length)break;
-					MPI_Recv(out+r*tbd*i+k, length-rank*tbd, MPI_DOUBLE_COMPLEX,
-							 r, 1, MPI_COMM_WORLD, &status);
-				}
-								
-			}else{
-				if(rank*tbd*i+k < length)
-					MPI_Send(out+rank*tbd*i+k, length-rank*tbd, MPI_DOUBLE_COMPLEX,
-							0, 1,MPI_COMM_WORLD);
-			}
-			MPI_Barrier(MPI_COMM_WORLD);
-			if(rank==0){
-				for(int r=1;r<size;r++)
-						MPI_Send(out, length, MPI_DOUBLE_COMPLEX,
-							r, 1,MPI_COMM_WORLD);
-			}else{
-				MPI_Recv(out, length, MPI_DOUBLE_COMPLEX,
-							 0, 1, MPI_COMM_WORLD, &status);
-			}
-			MPI_Barrier(MPI_COMM_WORLD);
-        }
+		}
+		MPI_Barrier(MPI_COMM_WORLD);
+		synch(i, tbd, length);
+		MPI_Barrier(MPI_COMM_WORLD);	
     }
 }
