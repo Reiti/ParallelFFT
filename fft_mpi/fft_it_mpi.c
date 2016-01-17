@@ -263,7 +263,7 @@ void fft(int len)
     for(int i=0; i<len; i++) {
         out[reverse(i,lg(len))] = in[i];
     }
-  	for(int i = 2; i < len; i *= 2)  {
+  	for(int i = 2; i <= len; i *= 2)  {
 		//(void)printf("Ich %d berechne index: ",rank);
         for(int k =rank; k < i/2; k+=size) {
 	        double complex omega = rou[k];
