@@ -18,7 +18,6 @@
 
 #define PI 3.14159265358979323846
 
-double complex* rou;
 
 void fft(double complex *in, double complex *out, int len);
 uint32_t reverse(uint32_t index, int size);
@@ -61,9 +60,6 @@ int main(int argc, char *argv[])
 		return 1;
 	}
 
-	rou = (double complex*)malloc(len*sizeof(double complex));
-	for(int i=0;i<len;i++)
-		rou[i] = cexp(-2*PI*I*i/len);
 
 	if(p){
 		(void)printf("Processing FFT of Input:\n");print_cmplx_ar(in,10,1 , len);
@@ -128,7 +124,7 @@ void fft(double complex *in, double complex *out, int len)
    for(int i = 2; i <= len; i *= 2)  {
         #pragma omp parallel for schedule(dynamic)
         for(int k = 0; k < i/2; k++) {
-            double complex omega = rou[k];
+            double complex omega = cexp(-2*k*PI*I/i);
             for(int j = 0; j < len/i; j++) {
                 double complex twiddle = omega * out[j*i + k + i/2];
                 out[j*i + k + i/2] = out[j*i + k] - twiddle;
