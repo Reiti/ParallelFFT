@@ -77,7 +77,8 @@ int main(int argc, char *argv[])
 	MPI_Barrier(MPI_COMM_WORLD);
 	if(len <=0){
 		(void)fprintf(stderr,"something went wrong!...len: %d - Rank: %d\n", len, rank);
-		return 1;
+		
+	return 1;
 	}
 
     
@@ -152,6 +153,7 @@ MPI_Barrier(MPI_COMM_WORLD);
 MPI_Barrier(MPI_COMM_WORLD);
 //	free(in);free(out);free(rou);
 	fclose(fin);	
+	MPI_Finalize();
 	return 0;
 }
 
@@ -237,8 +239,9 @@ void fft(int len)
 			MPI_Barrier(MPI_COMM_WORLD);
 		}
     }
-	MPI_Status status;	
-	if(rank ==0 && size >=2){
+	MPI_Status status;
+	if(size <2) return;	
+	if(rank ==0){
 		for(int r =1;r< size;r++){
 			double complex *rec = \
 						(double complex*)malloc((len) * sizeof(double complex));
