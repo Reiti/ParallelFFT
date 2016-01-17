@@ -266,7 +266,7 @@ void fft(int len)
   	for(int i = 2; i <= len; i *= 2)  {
 		//(void)printf("Ich %d berechne index: ",rank);
         for(int k =rank; k < i/2; k+=size) {
-	        double complex omega = rou[k];
+	        double complex omega = cexp(-2*k*PI*I/i);
             for(int j = 0;j < len/i ;j++) {
                 double complex twiddle = omega * out[j*i + k + i/2];
                 out[j*i + k + i/2] = out[j*i + k] - twiddle;
