@@ -198,61 +198,10 @@ void merge(double complex *rec, int r, int i, int len){
 	//print_comp(rec, out, len);
 }
 
-void synch(int i, int len){
-	/*if(i==2){
-		MPI_Bcast(out, len, MPI_DOUBLE_COMPLEX, 0, MPI_COMM_WORLD);
-		return;
-	}*/
+void sprayData(int i, int len){
+	
 	MPI_Status status;
-	/*for testing only
-	if(rank ==0){
-		for(int r=2;r<size;r+=2){
-			if(r >=i/2)break;
-			//(void)printf("Von %d bekommt\n", r);
-			double complex *rec = \
-					(double complex*)malloc((len) * sizeof(double complex));
-			MPI_Recv(rec, len,														 					MPI_DOUBLE_COMPLEX, r, r, MPI_COMM_WORLD,
-					 	&status);
-			merge(rec, r, i, len);
-			free(rec);
-		}		
-		
-				
-	}else{	
-		if(rank ==1){
-			for(int r=3;r<size;r+=2){
-				if(r >=i/2)break;
-				//(void)printf("Von %d bekommt\n", r);
-				double complex *rec = \
-					(double complex*)malloc((len) * sizeof(double complex));
-				MPI_Recv(rec, len,			
-						 MPI_DOUBLE_COMPLEX, r, r, MPI_COMM_WORLD,
-							 &status);
-				merge(rec, r, i, len);
-				free(rec);
-			}	
-		}else{
-			if(rank < i/2)
-				MPI_Send(out, len,
- 						MPI_DOUBLE_COMPLEX, rank %2, rank,MPI_COMM_WORLD);
-		//(void)printf("Ich %d sende an root!\n", rank);
-		}
-	}
-//(void)printf("test\n");
-	if(rank==0){
-		for(int r=2;r<size;r+=2)
-				MPI_Send(out, len, MPI_DOUBLE_COMPLEX,
-					r, r,MPI_COMM_WORLD);
-	}else{
-		if(rank ==1){
-			for(int r=3;r<size;r+=2)
-				MPI_Send(out, len, MPI_DOUBLE_COMPLEX,
-					r, r,MPI_COMM_WORLD);
-		}else{
-			MPI_Recv(out, len, MPI_DOUBLE_COMPLEX,
-					 rank%2, rank, MPI_COMM_WORLD, &status);
-		}
-	}*/
+	
 	if(i <= size){
 		if(rank >= i) return;
 		if(rank +i/2 < i){
@@ -284,7 +233,7 @@ void fft(int len)
 		}
 		if(size>=2){
 			MPI_Barrier(MPI_COMM_WORLD);
-			synch(i, len);
+			sprayData(i, len);
 			MPI_Barrier(MPI_COMM_WORLD);
 		}
     }
