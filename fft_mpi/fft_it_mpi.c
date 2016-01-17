@@ -199,11 +199,12 @@ void merge(double complex *rec, int r, int i, int len){
 }
 
 void synch(int i, int len){
-	if(i==2){
+	/*if(i==2){
 		MPI_Bcast(out, len, MPI_DOUBLE_COMPLEX, 0, MPI_COMM_WORLD);
 		return;
-	}
+	}*/
 	MPI_Status status;
+	/*for testing only
 	if(rank ==0){
 		for(int r=2;r<size;r+=2){
 			if(r >=i/2)break;
@@ -251,10 +252,18 @@ void synch(int i, int len){
 			MPI_Recv(out, len, MPI_DOUBLE_COMPLEX,
 					 rank%2, rank, MPI_COMM_WORLD, &status);
 		}
+	}*/
+	if(i <= size){
+		if(rank >= i) return;
+		if(rank +i/2 < i){
+			MPI_Send(out, len, MPI_DOUBLE_COMPLEX,
+					rank + i/2, rank,MPI_COMM_WORLD);
+		}else{
+			MPI_Recv(out, len, MPI_DOUBLE_COMPLEX,
+				 	rank - i/2, rank-i/2, MPI_COMM_WORLD, &status);
+		}
 	}
-	
-
-	//MPI_Bcast(out, len, MPI_DOUBLE_COMPLEX, 0, MPI_COMM_WORLD);
+		
 }
 
 void fft(int len)
@@ -281,15 +290,19 @@ void fft(int len)
     }
 	MPI_Status status;	
 	if(rank ==0 && size >=2){
-		double complex *rec = \
-					(double complex*)malloc((len) * sizeof(double complex));
-		MPI_Recv(rec, len, MPI_DOUBLE_COMPLEX,
-					 1, 0, MPI_COMM_WORLD, &status);
-		for(int i=1;i<len ;i+=2){
-			out[i]=rec[i];
+		for(int r =1;r< size;r++){
+			double complex *rec = \
+						(double complex*)malloc((len) * sizeof(double complex));
+			MPI_Recv(rec, len, MPI_DOUBLE_COMPLEX,
+						 r, 0, MPI_COMM_WORLD, &status);
+			for(int rn =r;rn < len;rn+=size){
+				for(int i=rn;i<len ;i+=size){
+					out[i]=rec[i];
+				}
+			}
+			free(rec);
 		}
-		free(rec);
-	}else if(rank ==1){
+	}else{
 		MPI_Send(out, len, MPI_DOUBLE_COMPLEX,
 					0, 0,MPI_COMM_WORLD);
 	}
