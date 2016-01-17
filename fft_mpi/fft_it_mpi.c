@@ -185,28 +185,48 @@ int ispow2(int len){
 	return 1;
 }
 
+void merge(double complex *rec, int r,int tbd, int i, int length){
+	for(int j= r*tbd; j < (r+1)*tbd; j++){
+		for(int k =0;k<length/i;k++){
+			out[k*i+j] = rec[k*i];
+			out[k*i+j+i/2] = rec[k*i+i/2];
+		}
+	}
+}
+
 void synch(int i, int tbd, int length){
 	MPI_Status status;
 	if(rank ==0){
 		for(int r=1;r<size;r++){
 			if(r >=i/2)break;
-			MPI_Recv(out+r*tbd, length-rank*tbd,														 MPI_DOUBLE_COMPLEX, r, 1, MPI_COMM_WORLD,
+			//(void)printf("Von %d bekommt\n", r);
+			double complex *rec = \
+					(double complex*)malloc((length-r*tbd) * sizeof(double complex));
+			MPI_Recv(rec, length-r*tbd,														 MPI_DOUBLE_COMPLEX, r, r, MPI_COMM_WORLD,
 					 &status);
-		}						
-	}else{
-		if(rank < i/2)
+			merge(rec, r, tbd, i, length);
+			free(rec);
+		}		
+		
+				
+	}else{	
+		if(rank < i/2){
 			MPI_Send(out+rank*tbd, length-rank*tbd,
- 					MPI_DOUBLE_COMPLEX, 0, 1,MPI_COMM_WORLD);
+ 					MPI_DOUBLE_COMPLEX, 0, rank,MPI_COMM_WORLD);
+		//(void)printf("Ich %d sende an root!\n", rank);
+		}
 	}
-	MPI_Barrier(MPI_COMM_WORLD);
-	if(rank==0){
+//(void)printf("test\n");
+	/*if(rank==0){
 		for(int r=1;r<size;r++)
 				MPI_Send(out, length, MPI_DOUBLE_COMPLEX,
 					r, 1,MPI_COMM_WORLD);
 	}else{
 		MPI_Recv(out, length, MPI_DOUBLE_COMPLEX,
 					 0, 1, MPI_COMM_WORLD, &status);
-	}
+	}*/
+
+	MPI_Bcast(out, length, MPI_DOUBLE_COMPLEX, 0, MPI_COMM_WORLD);
 }
 
 void fft(int len)
@@ -221,9 +241,12 @@ void fft(int len)
 		MPI_Barrier(MPI_COMM_WORLD);
 		int tbd = i/2/size;
 		if(!tbd){
-			if(rank >= i/2) continue;
 			tbd=1;
+			if(rank >= i/2) 
+				goto test;
+				
 		}
+		//(void)printf("Ich: %d berechne von %d bis %d\n", rank, rank *tbd , (rank+1)*tbd);
         for(int k =rank * tbd; k < (rank+1)*tbd; k++) {
             double complex omega = rou[k];
             for(int j = 0;j<length/i ;j++) {
@@ -232,8 +255,8 @@ void fft(int len)
                 out[j*i + k] = out[j*i + k] + twiddle;
             }
 		}
+		test:
 		MPI_Barrier(MPI_COMM_WORLD);
 		synch(i, tbd, length);
-		MPI_Barrier(MPI_COMM_WORLD);	
     }
 }
