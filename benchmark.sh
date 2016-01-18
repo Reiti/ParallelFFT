@@ -10,8 +10,9 @@ for ((exp = $START_EXP; exp <= END_EXP; exp++))
     echo e$exp >> benchmark_res
     for ((i = 0; i < $ITERATIONS; i++))
     do
-      ./num_gen -e $exp --rectangle | $FFT
-      #need to somehow get the timing value here
+      res[i]="$(./num_gen -e $exp --rectangle | $FFT -b)"
+      echo ${res[i]}
     done
-    echo ${res[$ITERATIONS/2]} >> benchmark_res
+    sorted=($(printf '%s\n' "${res[@]}"|sort))
+    echo ${sorted[$ITERATIONS/2]} >> benchmark_res
   done
