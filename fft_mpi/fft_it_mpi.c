@@ -13,7 +13,7 @@
 #include <time.h>
 #include "prints.h"
 #include "numgenparser.h"
-
+#include <assert.h>
 //#include "/opt/NECmpi/gcc/1.3.1/include/mpi.h"
 #include <mpi/mpi.h>
 #define PI 3.14159265358979323846
@@ -23,8 +23,9 @@ int rank, size;
 void fft(int len);
 uint32_t reverse(uint32_t index, int size);
 int lg(int num);
-
-double complex * in;
+void merge(int len);
+int ispow2(int len);
+	double complex * in;
 	double complex * out;
 
 void frees(void){
@@ -37,14 +38,17 @@ void frees(void){
 }
 int main(int argc, char *argv[])
 {
+	
 	atexit(frees);
     char c;
 	int p=0;
 	FILE* fin =stdin;
+	int m=0;
 	MPI_Init(&argc, &argv);
 	MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 	MPI_Comm_size(MPI_COMM_WORLD, &size);
-	while(rank ==0 && (c =getopt(argc, argv, "pf:"))!=-1){
+	assert(ispow2(size));
+	while((c =getopt(argc, argv, "pf:m"))!=-1){
 		switch(c){
 			case 'p':
 				p=1;
@@ -54,6 +58,9 @@ int main(int argc, char *argv[])
 					(void)fprintf(stderr,"openeing optarg failed\n");
 					return -1;
 				}
+				break;
+			case 'm':
+				m=1;
 				break;	
 			default:
 				break;
@@ -65,7 +72,9 @@ int main(int argc, char *argv[])
 	
 	
 	int len = -1;
-	printf("Size = %d... I am Processor rank: %d\n", size, rank);
+	if(p)
+		(void)printf("Size = %d... I am Processor rank: %d\n", size, rank);
+	
 	if(rank == 0){
 		len = getNumAmount(fin);
 		for(int i=1;i<size;i++)	
@@ -81,17 +90,15 @@ int main(int argc, char *argv[])
 	return 1;
 	}
 
-    
-
-	//double complex in[len];
-    //double complex out[len];
-
 	in = (double complex*)malloc(len * sizeof(double complex));
 	out = (double complex*)malloc(len * sizeof(double complex));
-if(in ==NULL || out ==NULL){
-	fprintf(stderr, "ERROR MALLOCING!!\n");
-	return 1;
-}
+	
+
+	if(in ==NULL || out ==NULL){
+		fprintf(stderr, "ERROR MALLOCING!!\n");
+		return 1;
+	}
+	
 	int counter=-2;
 	if(rank == 0){
 		counter = getNumbers(in, fin);
@@ -99,8 +106,6 @@ if(in ==NULL || out ==NULL){
 	}else{
 		
 	}
-
-
 
 	MPI_Barrier(MPI_COMM_WORLD);
 
@@ -121,7 +126,7 @@ if(in ==NULL || out ==NULL){
 		(void)fprintf(stderr, "wrong number amount in stream\n");
 		return 1;
 	}
-
+	assert(len >= size);
 	rou = (double complex*)malloc(len*sizeof(double complex));
 	for(int i=0;i<len;i++)
 		rou[i] = cexp(-2*PI*I*i/len);
@@ -129,29 +134,41 @@ if(in ==NULL || out ==NULL){
 	if(p && rank ==0){
 		(void)printf("Processing FFT of Input:\n");print_cmplx_ar(in,10,1 , len);
 	}
-		//printf("----%d %d-----\n",sizeof(in),sizeof(in[0]) );
-MPI_Barrier(MPI_COMM_WORLD);
 
-  struct timespec time;
+	MPI_Barrier(MPI_COMM_WORLD);
+
+ /* struct timespec time;
   int tdmicros = 0;	
+	
 	if(rank ==0){
-	  (void)printf("fft starts: \n");
-	  (void) clock_gettime(CLOCK_REALTIME, &time);
-	  tdmicros = ((int)time.tv_sec*1000000) + time.tv_nsec/1000;
-	}
+	    (void)printf("fft starts: \n");
+		(void) clock_gettime(CLOCK_REALTIME, &time);
+	    tdmicros = ((int)time.tv_sec*1000000) + time.tv_nsec/1000;
+
+	}*/
+	double tpast= MPI_Wtime();
 	  fft(len);
-	if(rank==0){
+/*	if(rank==0){
 	  (void) clock_gettime(CLOCK_REALTIME, &time);
 	  tdmicros = (((int)time.tv_sec*1000000) + time.tv_nsec/1000)-tdmicros;
-	  (void)printf("fft done! Took %d microseconds\n", tdmicros);
+
+	  (void)printf("fft done! Took %d microseconds \n", tdmicros);
+	}*/
+	double tmeasure;
+	tpast = MPI_Wtime()-tpast;
+	MPI_Reduce(&tpast, &tmeasure, 1, MPI_DOUBLE, MPI_MAX, 0, MPI_COMM_WORLD);
+	if(rank == 0){
+		(void)printf("According to MPI time fft took %e seconds\n",tmeasure );
 	}
-	if(p && rank ==0){
+	if(m)
+		merge(len);	
+
+	if(p && m  && rank ==0){
 		(void)printf("Result:\n");
-	//print_cmplx_ar(out,10, 1,len);
+
     	print_comp(in, out,len);
 	}
-MPI_Barrier(MPI_COMM_WORLD);
-//	free(in);free(out);free(rou);
+	MPI_Barrier(MPI_COMM_WORLD);
 	fclose(fin);	
 	MPI_Finalize();
 	return 0;
@@ -179,40 +196,44 @@ uint32_t reverse(uint32_t index, int size)
     }
     return reversed;
 }
-int ispow2(int len){
-	while(len !=0){
-		if(len %2 ==1 && len /2 != 0)
-			return 0;
-		len>>=1;
-	}
-	return 1;
+int ispow2(int x){
+	while(x %2 ==0 && x >1)
+		x/=2;
+	return x==1;	
 }
 
-void merge(double complex *rec, int r, int i, int len){
-	//printf("merging at i= %d rank %d with %d\n", i, r, rank);
-	//print_comp(rec, out, len);
-	for(int k= r;k < i/2; k+=size){
-		for(int j =0;j<len/i;j++){
-			out[j*i+k] = rec[j*i+k];
-			out[j*i+k+i/2] = rec[j*i+k+i/2];
+void merge(int len){
+	MPI_Status status;
+	if(size <2) return;	
+	if(rank ==0){
+		for(int r =1;r< size;r++){
+			double complex *rec = \
+						(double complex*)malloc((len) * sizeof(double complex));
+			MPI_Recv(rec, len, MPI_DOUBLE_COMPLEX,
+						 r, 0, MPI_COMM_WORLD, &status);
+			for(int rn =r;rn < len;rn+=size){
+				for(int i=rn;i<len ;i+=size){
+					out[i]=rec[i];
+				}
+			}
+			free(rec);
 		}
+	}else{
+		MPI_Send(out, len, MPI_DOUBLE_COMPLEX,
+					0, 0,MPI_COMM_WORLD);
 	}
-	//print_comp(rec, out, len);
 }
 
 void sprayData(int i, int len){
 	
 	MPI_Status status;
-	
-	if(i <= size){
-		if(rank >= i) return;
-		if(rank +i/2 < i){
-			MPI_Send(out, len, MPI_DOUBLE_COMPLEX,
-					rank + i/2, rank,MPI_COMM_WORLD);
-		}else{
-			MPI_Recv(out, len, MPI_DOUBLE_COMPLEX,
-				 	rank - i/2, rank-i/2, MPI_COMM_WORLD, &status);
-		}
+	if(rank >= i) return;
+	if(rank +i/2 < i){
+		MPI_Send(out, len, MPI_DOUBLE_COMPLEX,
+				rank + i/2, rank,MPI_COMM_WORLD);
+	}else{
+		MPI_Recv(out, len, MPI_DOUBLE_COMPLEX,
+			 	rank - i/2, rank-i/2, MPI_COMM_WORLD, &status);
 	}
 		
 }
@@ -233,30 +254,11 @@ void fft(int len)
                 out[j*i + k] = out[j*i + k] + twiddle;
             }
 		}
-		if(size>=2){
-			MPI_Barrier(MPI_COMM_WORLD);
+		if(i <= size){
+			//MPI_Barrier(MPI_COMM_WORLD);
 			sprayData(i, len);
-			MPI_Barrier(MPI_COMM_WORLD);
+			//MPI_Barrier(MPI_COMM_WORLD);
 		}
-    }
-	MPI_Status status;
-	if(size <2) return;	
-	if(rank ==0){
-		for(int r =1;r< size;r++){
-			double complex *rec = \
-						(double complex*)malloc((len) * sizeof(double complex));
-			MPI_Recv(rec, len, MPI_DOUBLE_COMPLEX,
-						 r, 0, MPI_COMM_WORLD, &status);
-			for(int rn =r;rn < len;rn+=size){
-				for(int i=rn;i<len ;i+=size){
-					out[i]=rec[i];
-				}
-			}
-			free(rec);
-		}
-	}else{
-		MPI_Send(out, len, MPI_DOUBLE_COMPLEX,
-					0, 0,MPI_COMM_WORLD);
-	}
+    }	
 }
 
