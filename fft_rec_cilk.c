@@ -88,7 +88,7 @@ int main(int argc, char *argv[])
     	//print_comp(in, out,len);/*useless with this rec mehtod*/
 	}
 
-	(void) printf("%d", tdmicros);
+	if(b)(void) printf("%d", tdmicros);
 	free(in);free(out);free(rou);
 
 }
@@ -96,6 +96,14 @@ int main(int argc, char *argv[])
 /*roots of unity*/
 double complex *rou;
 
+
+void recombine(double complex *dc1, double complex *dc2, int k, int step, int len)
+{
+	double complex twiddle = rou[k]*dc2[2*k + step];
+
+	dc1[k] = dc2[2*k] + twiddle;
+	dc1[k + len/2] = dc2[2*k] - twiddle;
+}
 void fft_help(double complex *dc1, double complex *dc2, int len, int step)
 {
     if(step >= len) {
@@ -111,12 +119,15 @@ void fft_help(double complex *dc1, double complex *dc2, int len, int step)
     cilk_spawn fft_help(dc2, dc1, len, step*2);
     cilk_spawn fft_help(dc2+step, dc1+step, len, step*2);
 		cilk_sync;
+		
     for(int k=0; k<len/2; k+=step) {
-      double complex twiddle = rou[k]*dc2[2*k + step];
+			cilk_spawn recombine(dc1, dc2, k, step, len);
+      /*double complex twiddle = rou[k]*dc2[2*k + step];
 
       dc1[k] = dc2[2*k] + twiddle;
-      dc1[k + len/2] = dc2[2*k] - twiddle;
+      dc1[k + len/2] = dc2[2*k] - twiddle;*/
     }
+		cilk_sync;
 }
 void fft(double complex *in, double complex *out, int len)
 {
