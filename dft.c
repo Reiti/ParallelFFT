@@ -19,16 +19,24 @@ int main(int argc, char *argv[])
 {
     char c;
 	int p=0;
-	while((c =getopt(argc, argv, "p"))!=-1){
+  int b=0;
+	while((c =getopt(argc, argv, "bp"))!=-1){
 		switch(c){
 			case 'p':
 				p=1;
 				break;
+      case 'b':
+        b=1;
+        break;
 			default:
 				break;
 		}
 	}
 
+  if(p == 1 && b == 1) {
+    fprintf(stderr, "Print and Benchmark not allowed at the same time");
+    exit(0);
+  }
 
 
 	int len = getNumAmount();
@@ -52,13 +60,13 @@ int main(int argc, char *argv[])
 		//printf("----%d %d-----\n",sizeof(in),sizeof(in[0]) );
   struct timespec time;
   int tdmicros = 0;
-	(void)printf("fft starts: \n");
+	if(!b)(void)printf("fft starts: \n");
   (void) clock_gettime(CLOCK_REALTIME, &time);
   tdmicros = ((int)time.tv_sec*1000000) + time.tv_nsec/1000;
   dft(in, out, len);
   (void) clock_gettime(CLOCK_REALTIME, &time);
   tdmicros = (((int)time.tv_sec*1000000) + time.tv_nsec/1000)-tdmicros;
-	(void)printf("fft done! Took %d microseconds\n", tdmicros);
+	if(!b)(void)printf("fft done! Took %d microseconds\n", tdmicros);
 
 	if(p){
 		(void)printf("Result:\n");
@@ -66,6 +74,7 @@ int main(int argc, char *argv[])
     	print_comp(in, out,len);
 	}
 
+  (void) printf("%d", tdmicros);
 	free(in);free(out);
 
 }

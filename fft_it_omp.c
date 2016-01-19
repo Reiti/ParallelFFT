@@ -33,16 +33,24 @@ int main(int argc, char *argv[])
 
     char c;
 	int p=0;
-	while((c =getopt(argc, argv, "p"))!=-1){
+  int b=0;
+	while((c =getopt(argc, argv, "pb"))!=-1){
 		switch(c){
 			case 'p':
 				p=1;
 				break;
+      case 'b':
+        b=1;
+        break;
 			default:
 				break;
 		}
 	}
 
+  if(p == 1 && b == 1) {
+    fprintf(stderr, "Print and Benchmark not allowed at the same time");
+    exit(0);
+  }
 
 
 	int len = getNumAmount();
@@ -67,19 +75,20 @@ int main(int argc, char *argv[])
 		//printf("----%d %d-----\n",sizeof(in),sizeof(in[0]) );
 
   double timeUsed = 0.0;
-	(void)printf("fft starts: \n");
+	if(!b)(void)printf("fft starts: \n");
   timeUsed=omp_get_wtime();
   fft(in, out, len);
   timeUsed=omp_get_wtime() - timeUsed;
 
   int tdmicros = (int)(timeUsed*1000000);
-  (void)printf("fft done! Took %d microseconds\n", tdmicros);
+  if(!b)(void)printf("fft done! Took %d microseconds\n", tdmicros);
 	if(p){
 		(void)printf("Result:\n");
 	//print_cmplx_ar(out,10, 1,len);
     	print_comp(in, out,len);
 	}
 
+  (void) printf("%d", tdmicros);
 	free(in);free(out);
 }
 
