@@ -325,7 +325,6 @@ void fft(int len)
 	
   	for(int i = 2; i <= len; i *= 2)  {
 		//(void)printf("Ich %d berechne index: ",rank);
-		if(h2){help2(len, i);continue;}else if(h){help(len,i);continue;} else{
 		for(int k=rank;k < i/2;k+=size){
 	       	double complex omega = cexp(-2*k*PI*I/i);
             for(int j = 0;j < len/i ;j++) {
@@ -334,11 +333,8 @@ void fft(int len)
                 out[j*i + k] = out[j*i + k] + twiddle;
             }
 		}
-		}
 		if(i <= size){
-			//MPI_Barrier(MPI_COMM_WORLD);
 			sprayData(i, len);
-			//MPI_Barrier(MPI_COMM_WORLD);
 		}
     }	
 }
