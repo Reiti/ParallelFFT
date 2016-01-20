@@ -46,8 +46,9 @@ int main(int argc, char *argv[])
 	atexit(frees);
     char c;
 	int p=0;
-	FILE* fin =stdin;
+	FILE* fin =NULL;
 	int m=0;
+	int b=0;
 	
 	MPI_Init(&argc, &argv);
 	MPI_Group group;
@@ -56,7 +57,7 @@ int main(int argc, char *argv[])
 	MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 	MPI_Comm_size(MPI_COMM_WORLD, &size);
 	assert(ispow2(size));
-	while((c =getopt(argc, argv, "pf:mha"))!=-1){
+	while((c =getopt(argc, argv, "pf:mhab"))!=-1){
 		switch(c){
 			case 'p':
 				p=1;
@@ -76,11 +77,17 @@ int main(int argc, char *argv[])
 			case 'a':
 				h2=1;
 				break;
+			case 'b':
+				b=1;
+				break;
 			default:
 				break;
 		}
 	}
-
+	if(fin == NULL){
+		(void)fprintf(stderr, "need file ... -f <inputfile>\n");
+		return 1;
+	}
 
 	MPI_Barrier(MPI_COMM_WORLD);
 	
@@ -130,30 +137,22 @@ int main(int argc, char *argv[])
 
 	MPI_Barrier(MPI_COMM_WORLD);
 
- /* struct timespec time;
-  int tdmicros = 0;	
-	
-	if(rank ==0){
-	    (void)printf("fft starts: \n");
-		(void) clock_gettime(CLOCK_REALTIME, &time);
-	    tdmicros = ((int)time.tv_sec*1000000) + time.tv_nsec/1000;
-
-	}*/
 	double tpast= MPI_Wtime();
 	  fft(len);
-/*	if(rank==0){
-	  (void) clock_gettime(CLOCK_REALTIME, &time);
-	  tdmicros = (((int)time.tv_sec*1000000) + time.tv_nsec/1000)-tdmicros;
 
-	  (void)printf("fft done! Took %d microseconds \n", tdmicros);
-	}*/
-	double tmeasure;
+	double tmeasure = 0.0;
 	tpast = MPI_Wtime()-tpast;
 	MPI_Reduce(&tpast, &tmeasure, 1, MPI_DOUBLE, MPI_MAX, 0, MPI_COMM_WORLD);
-	if(rank == 0){
-		(void)printf("According to MPI time fft took %e seconds\n",tmeasure );
+
+	int msecs = (int)(tmeasure * 1000000);
+
+	if(rank == 0 && !b){
+		(void)printf("According to MPI time fft took %d microseconds\n", msecs);
 	}
-	
+	if(b)
+		(void)printf("%d", msecs);
+
+
 	if(m)
 		merge(len);	
 
@@ -166,7 +165,6 @@ int main(int argc, char *argv[])
 	fclose(fin);
 	MPI_Comm_free(&mycomm);		
 	MPI_Finalize();
-	//printf("test %d \n", rank);
 	return 0;
 }
 
@@ -218,20 +216,6 @@ void merge(int len){
 		MPI_Send(out, len, MPI_DOUBLE_COMPLEX,
 					0, 0,MPI_COMM_WORLD);
 	}
-}
-
-void sprayData(int i, int len){
-	
-	MPI_Status status;
-	if(rank >= i) return;
-	if(rank +i/2 < i){
-		MPI_Send(out, len, MPI_DOUBLE_COMPLEX,
-				rank + i/2, rank,MPI_COMM_WORLD);
-	}else{
-		MPI_Recv(out, len, MPI_DOUBLE_COMPLEX,
-			 	rank - i/2, rank-i/2, MPI_COMM_WORLD, &status);
-	}
-		
 }
 
 void help(int len, int i){
@@ -316,6 +300,17 @@ void help2(int len, int i){
 
 }
 
+void sprayData(int i, int len){
+	MPI_Status status;
+	if(rank +i/2 < i){
+		MPI_Send(out, len, MPI_DOUBLE_COMPLEX,
+				rank + i/2, rank,MPI_COMM_WORLD);
+	}else{
+		MPI_Recv(out, len, MPI_DOUBLE_COMPLEX,
+			 	rank - i/2, rank-i/2, MPI_COMM_WORLD, &status);
+	}	
+}
+
 void fft(int len)
 {
     /*Fill the output array in bit reversed order, rest of fft can be done inplace*/
@@ -333,7 +328,7 @@ void fft(int len)
                 out[j*i + k] = out[j*i + k] + twiddle;
             }
 		}
-		if(i <= size){
+		if(i <= size && rank < i){
 			sprayData(i, len);
 		}
     }	
