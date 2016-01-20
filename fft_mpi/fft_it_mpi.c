@@ -149,7 +149,7 @@ int main(int argc, char *argv[])
 	if(rank == 0 && !b){
 		(void)printf("According to MPI time fft took %d microseconds\n", msecs);
 	}
-	if(b)
+	if(rank ==0 &&b)
 		(void)printf("%d", msecs);
 
 
