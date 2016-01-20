@@ -131,7 +131,8 @@ void fft(double complex *in, double complex *out, int len)
     }
 
    for(int i = 2; i <= len; i *= 2)  {
-        #pragma omp parallel for schedule(dynamic)
+     //guided is faster on saturn
+        #pragma omp parallel for schedule(guided)
         for(int k = 0; k < i/2; k++) {
             double complex omega = cexp(-2*k*PI*I/i);
             for(int j = 0; j < len/i; j++) {

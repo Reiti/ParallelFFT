@@ -82,7 +82,7 @@ int main(int argc, char *argv[])
     	//print_comp(in, out,len);/*useless with this rec mehtod*/
 	}
 
-	(void) printf("%d", tdmicros);
+	if(b)(void) printf("%d", tdmicros);
 	free(in);free(out);
 }
 
