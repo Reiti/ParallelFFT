@@ -49,7 +49,7 @@ int main(int argc, char *argv[])
 	FILE* fin =NULL;
 	int m=0;
 	int b=0;
-	
+	int iter=1;
 	MPI_Init(&argc, &argv);
 	MPI_Group group;
 	MPI_Comm_group(MPI_COMM_WORLD, &group);
@@ -57,7 +57,7 @@ int main(int argc, char *argv[])
 	MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 	MPI_Comm_size(MPI_COMM_WORLD, &size);
 	assert(ispow2(size));
-	while((c =getopt(argc, argv, "pf:mhab"))!=-1){
+	while((c =getopt(argc, argv, "pf:mhab:"))!=-1){
 		switch(c){
 			case 'p':
 				p=1;
@@ -79,6 +79,7 @@ int main(int argc, char *argv[])
 				break;
 			case 'b':
 				b=1;
+				iter = atoi(optarg);
 				break;
 			default:
 				break;
@@ -134,23 +135,24 @@ int main(int argc, char *argv[])
 	if(p && rank ==0){
 		(void)printf("Processing FFT of Input:\n");print_cmplx_ar(in,10,1 , len);
 	}
-
+int msecs=0;
 	MPI_Barrier(MPI_COMM_WORLD);
-
+for(int i=0;i< iter;i++){
 	double tpast= MPI_Wtime();
 	  fft(len);
-
 	double tmeasure = 0.0;
 	tpast = MPI_Wtime()-tpast;
 	MPI_Reduce(&tpast, &tmeasure, 1, MPI_DOUBLE, MPI_MAX, 0, MPI_COMM_WORLD);
+	msecs = (int)(tmeasure * 1000000);
+	if(rank ==0 &&b)
+		(void)printf("%d\n", msecs);
+}
 
-	int msecs = (int)(tmeasure * 1000000);
 
 	if(rank == 0 && !b){
 		(void)printf("According to MPI time fft took %d microseconds\n", msecs);
 	}
-	if(rank ==0 &&b)
-		(void)printf("%d", msecs);
+	
 
 
 	if(m)
