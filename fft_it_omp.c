@@ -11,6 +11,7 @@
 #include <string.h>
 #include <stdarg.h>
 #include <time.h>
+#include <unistd.h>
 #include "prints.h"
 #include "numgenparser.h"
 #include <omp.h>
@@ -34,13 +35,15 @@ int main(int argc, char *argv[])
     char c;
 	int p=0;
   int b=0;
-	while((c =getopt(argc, argv, "pb"))!=-1){
+  int times=1;
+	while((c =getopt(argc, argv, "pb:"))!=-1){
 		switch(c){
 			case 'p':
 				p=1;
 				break;
       case 'b':
         b=1;
+        times = atoi(optarg);
         break;
 			default:
 				break;
@@ -75,12 +78,16 @@ int main(int argc, char *argv[])
 		//printf("----%d %d-----\n",sizeof(in),sizeof(in[0]) );
 
   double timeUsed = 0.0;
+  int tdmicros = 0;
 	if(!b)(void)printf("fft starts: \n");
-  timeUsed=omp_get_wtime();
-  fft(in, out, len);
-  timeUsed=omp_get_wtime() - timeUsed;
+  for(int i=0; i<times; i++) {
+    timeUsed=omp_get_wtime();
+    fft(in, out, len);
+    timeUsed=omp_get_wtime() - timeUsed;
+    tdmicros = (int)(timeUsed*1000000);
+    if(b) printf("%d\n", tdmicros);
+  }
 
-  int tdmicros = (int)(timeUsed*1000000);
   if(!b)(void)printf("fft done! Took %d microseconds\n", tdmicros);
 	if(p){
 		(void)printf("Result:\n");
@@ -88,7 +95,6 @@ int main(int argc, char *argv[])
     	print_comp(in, out,len);
 	}
 
-  (void) printf("%d", tdmicros);
 	free(in);free(out);
 }
 

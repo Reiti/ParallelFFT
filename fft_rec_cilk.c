@@ -8,6 +8,7 @@
 #include "prints.h"
 #include <stdlib.h>
 #include <time.h>
+#include <unistd.h>
 #include "numgenparser.h"
 #include <cilk/cilk.h>
 #include <cilk/cilk_api.h>
@@ -27,13 +28,15 @@ int main(int argc, char *argv[])
 	char c;
 	int p=0;
 	int b=0;
-	while((c =getopt(argc, argv, "pb")) != -1){
+	int times=1;
+	while((c =getopt(argc, argv, "pb:")) != -1){
 		switch(c){
 			case 'p':
 				p=1;
 				break;
 			case 'b':
         b=1;
+				times=atoi(optarg);
         break;
 			default:
 				break;
@@ -76,19 +79,21 @@ int main(int argc, char *argv[])
 	struct timespec time;
   int tdmicros = 0;
 	if(!b)(void)printf("fft starts: \n");
-  (void) clock_gettime(CLOCK_REALTIME, &time);
-  tdmicros = ((int)time.tv_sec*1000000) + time.tv_nsec/1000;
-  fft(in, out, len);
-  (void) clock_gettime(CLOCK_REALTIME, &time);
-  tdmicros = (((int)time.tv_sec*1000000) + time.tv_nsec/1000)-tdmicros;
-	if(!b)(void)printf("fft done! Took %d microseconds\n", tdmicros);
+  for(int i=0; i<times; i++) {
+    (void) clock_gettime(CLOCK_REALTIME, &time);
+    tdmicros = ((int)time.tv_sec*1000000) + time.tv_nsec/1000;
+    fft(in, out, len);
+    (void) clock_gettime(CLOCK_REALTIME, &time);
+    tdmicros = (((int)time.tv_sec*1000000) + time.tv_nsec/1000)-tdmicros;
+    if(b)(void) printf("%d\n", tdmicros);
+  }
+  if(!b)(void)printf("fft done! Took %d microseconds\n", tdmicros);
 	if(p){
 		(void)printf("Result:\n");
 		print_cmplx_ar(out,10, 1,len);
     	//print_comp(in, out,len);/*useless with this rec mehtod*/
 	}
 
-	if(b)(void) printf("%d", tdmicros);
 	free(in);free(out);free(rou);
 
 }
@@ -119,7 +124,7 @@ void fft_help(double complex *dc1, double complex *dc2, int len, int step)
     cilk_spawn fft_help(dc2, dc1, len, step*2);
     cilk_spawn fft_help(dc2+step, dc1+step, len, step*2);
 		cilk_sync;
-		
+
     for(int k=0; k<len/2; k+=step) {
 			cilk_spawn recombine(dc1, dc2, k, step, len);
       /*double complex twiddle = rou[k]*dc2[2*k + step];

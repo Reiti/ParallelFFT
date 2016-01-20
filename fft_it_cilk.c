@@ -10,6 +10,7 @@
 #include <stdint.h>
 #include <string.h>
 #include <stdarg.h>
+#include <unistd.h>
 #include <time.h>
 #include "prints.h"
 #include "numgenparser.h"
@@ -29,13 +30,15 @@ int main(int argc, char *argv[])
     char c;
 	int p=0;
   int b=0;
-	while((c =getopt(argc, argv, "pb"))!=-1){
+  int times=1;
+	while((c =getopt(argc, argv, "pb:"))!=-1){
 		switch(c){
 			case 'p':
 				p=1;
 				break;
       case 'b':
         b=1;
+        times=atoi(optarg);
         break;
 			default:
 				break;
@@ -71,19 +74,22 @@ int main(int argc, char *argv[])
   struct timespec time;
   int tdmicros = 0;
 	if(!b)(void)printf("fft starts: \n");
-  (void) clock_gettime(CLOCK_REALTIME, &time);
-  tdmicros = ((int)time.tv_sec*1000000) + time.tv_nsec/1000;
-  fft(in, out, len);
-  (void) clock_gettime(CLOCK_REALTIME, &time);
-  tdmicros = (((int)time.tv_sec*1000000) + time.tv_nsec/1000)-tdmicros;
-	if(!b)(void)printf("fft done! Took %d microseconds\n", tdmicros);
+  for(int i=0; i<times; i++) {
+    (void) clock_gettime(CLOCK_REALTIME, &time);
+    tdmicros = ((int)time.tv_sec*1000000) + time.tv_nsec/1000;
+    fft(in, out, len);
+    (void) clock_gettime(CLOCK_REALTIME, &time);
+    tdmicros = (((int)time.tv_sec*1000000) + time.tv_nsec/1000)-tdmicros;
+    if(b)(void) printf("%d\n", tdmicros);
+  }
+  if(!b)(void)printf("fft done! Took %d microseconds\n", tdmicros);
 	if(p){
 		(void)printf("Result:\n");
 	//print_cmplx_ar(out,10, 1,len);
     	print_comp(in, out,len);
 	}
 
-  (void) printf("%d", tdmicros);
+
 	free(in);free(out);
 }
 

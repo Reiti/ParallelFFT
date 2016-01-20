@@ -8,6 +8,7 @@
 #include "prints.h"
 #include <stdlib.h>
 #include <omp.h>
+#include <unistd.h>
 #include <time.h>
 #include "numgenparser.h"
 
@@ -25,13 +26,15 @@ int main(int argc, char *argv[])
 	char c;
 	int p=0;
 	int b=0;
-	while((c =getopt(argc, argv, "pb")) != -1){
+	int times=1;
+	while((c =getopt(argc, argv, "pb:")) != -1){
 		switch(c){
 			case 'p':
 				p=1;
 				break;
 			case 'b':
         b=1;
+				times = atoi(optarg);
         break;
 			default:
 				break;
@@ -63,18 +66,21 @@ int main(int argc, char *argv[])
 	}
 
 	double timeUsed = 0.0;
+	int tdmicros=0;
   if(!b)(void)printf("fft starts: \n");
 	#pragma omp parallel shared(timeUsed, in, out, len)
 	{
 		#pragma omp single
 		{
-			if(!b)printf("Number of Threads: %d\n", omp_get_num_threads());
-			timeUsed=omp_get_wtime();
-			fft(in, out, len);
-			timeUsed=omp_get_wtime() - timeUsed;
+			for(int i=0; i<times; i++) {
+				timeUsed=omp_get_wtime();
+				fft(in, out, len);
+				timeUsed=omp_get_wtime() - timeUsed;
+				tdmicros = (int)(timeUsed*1000000);
+				if(b) printf("%d\n", tdmicros);
+			}
 		}
 	}
-	int tdmicros = (int)(timeUsed*1000000);
   if(!b)(void)printf("fft done! Took %d microseconds\n", tdmicros);
 	if(p){
 		(void)printf("Result:\n");
@@ -82,7 +88,6 @@ int main(int argc, char *argv[])
     	//print_comp(in, out,len);/*useless with this rec mehtod*/
 	}
 
-	if(b)(void) printf("%d", tdmicros);
 	free(in);free(out);
 }
 
