@@ -121,9 +121,10 @@ void fft_help(double complex *dc1, double complex *dc2, int len, int step)
 	with two children gets their needed FFT information, calculated by the children,
 	stored in dc2. Each node self stores the calculated information in dc1, which
 	is dc2 in all parents and the 'out' array in the original call*/
-    cilk_spawn fft_help(dc2, dc1, len, step*2);
-    cilk_spawn fft_help(dc2+step, dc1+step, len, step*2);
-		cilk_sync;
+  cilk_spawn fft_help(dc2, dc1, len, step*2);
+  cilk_spawn fft_help(dc2+step, dc1+step, len, step*2);
+	cilk_sync;
+
 
     for(int k=0; k<len/2; k+=step) {
 			//cilk_spawn recombine(dc1, dc2, k, step, len);

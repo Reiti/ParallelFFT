@@ -100,10 +100,10 @@ void fft_help(double complex *dc1, double complex *dc2, int len, int step)
 	  }
 		/*execute sequentially after a certain recursion depth
 			cutoff point determined experimentially*/
-		#pragma omp task if(step < len/8)
-	  fft_help(dc2, dc1, len, step*2);
-		#pragma omp task if(step < len/8)
-	  fft_help(dc2+step, dc1+step, len, step*2);
+		#pragma omp task final(((len/2)/step) < 1024)
+	  {fft_help(dc2, dc1, len, step*2);}
+		#pragma omp task final(((len/2)/step) < 1024)
+	  {fft_help(dc2+step, dc1+step, len, step*2);}
 		#pragma omp taskwait
 
 	  for(int k=0; k<len/2; k+=step) {

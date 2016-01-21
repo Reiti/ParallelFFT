@@ -8,7 +8,7 @@ OUTPUT=$5
 echo $FFT >> benchmark_res
 for ((exp = $START_EXP; exp <= END_EXP; exp++))
   do
-    res="$(./num_gen -e $exp --rectangle | $FFT -b $ITERATIONS)"
+    res="$(./num_gen -e $exp | $FFT -b $ITERATIONS)"
     sorted=($(printf '%s\n' "${res[@]}"|sort -n))
     echo "$exp;${sorted[$ITERATIONS/2]}" >> $OUTPUT
   done

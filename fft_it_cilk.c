@@ -124,40 +124,30 @@ int ispow2(int len){
 	return 1;
 }
 
-void loop_helper(double complex *in, double complex *out, int len, int start, int end, int i)
+
+void loop_helper(double complex *in, double complex *out, int len, int k, int i)
 {
-  (void)printf("%d: Accessing: %d - %d\n", i, start, end-1);
-  for(int k=start; k < end; k++) {
-    double complex omega = cexp(-2*k*PI*I/i);
-    for(int j = 0; j < len/i; j++) {
-        double complex twiddle = omega * out[j*i + k + i/2];
-        out[j*i + k + i/2] = out[j*i + k] - twiddle;
-        out[j*i + k] = out[j*i + k] + twiddle;
-    }
-  }
+  double complex omega = cexp(-2*k*PI*I/i);
+  for(int j = 0; j < len/i; j++) {
+      double complex twiddle = omega * out[j*i + k + i/2];
+      out[j*i + k + i/2] = out[j*i + k] - twiddle;
+      out[j*i + k] = out[j*i + k] + twiddle;
+    }   
 }
 
 
 void fft(double complex *in, double complex *out, int len)
 {
     /*Fill the output array in bit reversed order, rest of fft can be done inplace*/
-    int workers = __cilkrts_get_nworkers();
+
     for(int i=0; i<len; i++) {
         out[reverse(i,lg(len))] = in[i];
     }
 
-   int k=0;
    for(int i = 2; i <= len; i *= 2)  {
-        int chunksize = ((i/2)/workers);
-        if(chunksize == 0)
-          chunksize = 1;
-        for(k = 0; k < i/2; k+=chunksize) {  //TODO: Implement threshold for sequentiality (or chunksizes, whichever is faster)
-          cilk_spawn loop_helper(in, out, len, k, k+chunksize, i);
+        for(int k = 0; k < i/2; k++) {  //TODO: Implement threshold for sequentiality (or chunksizes, whichever is faster)
+          cilk_spawn loop_helper(in, out, len, k, i);
         }
         cilk_sync;
-        if(k != i/2) {
-          loop_helper(in, out, len, k, i/2, i);
-        }
-
     }
 }
