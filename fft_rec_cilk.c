@@ -126,13 +126,13 @@ void fft_help(double complex *dc1, double complex *dc2, int len, int step)
 		cilk_sync;
 
     for(int k=0; k<len/2; k+=step) {
-			cilk_spawn recombine(dc1, dc2, k, step, len);
-      /*double complex twiddle = rou[k]*dc2[2*k + step];
+			//cilk_spawn recombine(dc1, dc2, k, step, len);
+      double complex twiddle = rou[k]*dc2[2*k + step];
 
       dc1[k] = dc2[2*k] + twiddle;
-      dc1[k + len/2] = dc2[2*k] - twiddle;*/
+      dc1[k + len/2] = dc2[2*k] - twiddle;
     }
-		cilk_sync;
+	//	cilk_sync;
 }
 void fft(double complex *in, double complex *out, int len)
 {
