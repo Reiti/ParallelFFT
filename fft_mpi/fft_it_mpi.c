@@ -14,17 +14,18 @@
 #include "prints.h"
 #include "numgenparser.h"
 #include <assert.h>
-//#include "/opt/NECmpi/gcc/1.3.1/include/mpi.h"
-#include <mpi/mpi.h>
+#include "/opt/NECmpi/gcc/1.3.1/include/mpi.h"
+//#include <mpi/mpi.h>
 #define PI 3.14159265358979323846
 
-double complex* rou;
+
 int rank, size;
 void fft(int len);
 uint32_t reverse(uint32_t index, int size);
 int lg(int num);
 void merge(int len);
 int ispow2(int len);
+void sprayData(int i, int len);
 	double complex * in;
 	double complex * out;
 int h=0;
@@ -37,8 +38,7 @@ void frees(void){
 	free(in);
 	if(out !=NULL)
 	free(out);
-	if(rou !=NULL)
-	free(rou);
+
 }
 int main(int argc, char *argv[])
 {
@@ -50,6 +50,7 @@ int main(int argc, char *argv[])
 	int m=0;
 	int b=0;
 	int iter=1;
+	int r=0;
 	MPI_Init(&argc, &argv);
 	MPI_Group group;
 	MPI_Comm_group(MPI_COMM_WORLD, &group);
@@ -57,7 +58,7 @@ int main(int argc, char *argv[])
 	MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 	MPI_Comm_size(MPI_COMM_WORLD, &size);
 	assert(ispow2(size));
-	while((c =getopt(argc, argv, "pf:mhab:"))!=-1){
+	while((c =getopt(argc, argv, "pf:mhab:r"))!=-1){
 		switch(c){
 			case 'p':
 				p=1;
@@ -81,15 +82,19 @@ int main(int argc, char *argv[])
 				b=1;
 				iter = atoi(optarg);
 				break;
+			case 'r':
+				r=1;
+				break;
 			default:
 				break;
 		}
 	}
+	
 	if(fin == NULL){
 		(void)fprintf(stderr, "need file ... -f <inputfile>\n");
 		return 1;
 	}
-
+	
 	MPI_Barrier(MPI_COMM_WORLD);
 	
 	
@@ -128,19 +133,54 @@ int main(int argc, char *argv[])
 		return 1;
 	}
 	assert(len >= size);
-	rou = (double complex*)malloc(len*sizeof(double complex));
-	for(int i=0;i<len;i++)
-		rou[i] = cexp(-2*PI*I*i/len);
+	
+	if(r){
+		int z;
+		double timed=0.0;
+		int rounded=0;
+		for(int i =0;i<250;i++){
+			timed= MPI_Wtime();
+			sprayData(2, len);
+			timed = MPI_Wtime()-timed;
+			z+=(int)(timed * 1000000);
+		}
+		z= z /250;
+		MPI_Reduce(&z, &rounded, 1, MPI_INT,
+				 MPI_MAX, 0, MPI_COMM_WORLD);
+		if(rank==0)(void)printf("%d Microseconds\n", rounded);
+		z=0;
+		for(int tt =0;tt< 250;tt++){
+			int i=2;int k=0;
+			timed = MPI_Wtime();
+			double complex omega = cexp(-2*k*PI*I/i);
+			for(int j = 0;j < len/i; j++){
+				double complex twiddle = omega * out[j*i + k + i/2];
+        			out[j*i + k + i/2] = out[j*i + k] - twiddle;
+            			out[j*i + k] = out[j*i + k] + twiddle;
+			}
+			timed = MPI_Wtime()- timed;
+			z+=(int)(timed * 1000000);			
+		}
+		z= z /250;
+		MPI_Reduce(&z, &rounded, 1, MPI_INT,
+				 MPI_MAX, 0, MPI_COMM_WORLD);
+		if(rank==0)(void)printf("%d Microseconds\n", rounded);
+		
+		if(rank==0)(void)printf("at exp %d\n", lg(len));
+		MPI_Finalize();
+		return 0;
+		}
 
 	if(p && rank ==0){
 		(void)printf("Processing FFT of Input:\n");print_cmplx_ar(in,10,1 , len);
 	}
-int msecs=0;
+	int msecs=0;
+	double tmeasure = 0.0;
 	MPI_Barrier(MPI_COMM_WORLD);
 for(int i=0;i< iter;i++){
 	double tpast= MPI_Wtime();
 	  fft(len);
-	double tmeasure = 0.0;
+	
 	tpast = MPI_Wtime()-tpast;
 	MPI_Reduce(&tpast, &tmeasure, 1, MPI_DOUBLE, MPI_MAX, 0, MPI_COMM_WORLD);
 	msecs = (int)(tmeasure * 1000000);
