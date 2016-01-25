@@ -23,6 +23,7 @@ void fft(double complex *in, double complex *out, int len);
 
 int main(int argc, char *argv[])
 {
+//	__cilkrts_set_param("nworkers", "24");
 
 
 	char c;
@@ -101,16 +102,36 @@ int main(int argc, char *argv[])
 /*roots of unity*/
 double complex *rou;
 
-
-void recombine(double complex *dc1, double complex *dc2, int k, int step, int len)
+void sequential(double complex *dc1, double complex *dc2, int len, int step)
 {
-	double complex twiddle = rou[k]*dc2[2*k + step];
+    if(step >= len) {
+      return;
+    }
+	/*basicly this calcs FFT for the odd and even part and stores that in one array,
+	recursive calls later use these previous calculations, to calculate further...
+	that's why the two arrays get swapped
+	it's easily to demonstrate if you draw youself the tree of recursive calls. Each node
+	with two children gets their needed FFT information, calculated by the children,
+	stored in dc2. Each node self stores the calculated information in dc1, which
+	is dc2 in all parents and the 'out' array in the original call*/
+  sequential(dc2, dc1, len, step*2);
+  sequential(dc2+step, dc1+step, len, step*2);
 
-	dc1[k] = dc2[2*k] + twiddle;
-	dc1[k + len/2] = dc2[2*k] - twiddle;
+
+    for(int k=0; k<len/2; k+=step) {
+      double complex twiddle = rou[k]*dc2[2*k + step];
+
+      dc1[k] = dc2[2*k] + twiddle;
+      dc1[k + len/2] = dc2[2*k] - twiddle;
+    }
 }
+
 void fft_help(double complex *dc1, double complex *dc2, int len, int step)
 {
+	if((len/2)/step < 64) { //cutoff
+		sequential(dc1, dc2, len, step);
+		return;
+	}
     if(step >= len) {
       return;
     }
@@ -127,13 +148,11 @@ void fft_help(double complex *dc1, double complex *dc2, int len, int step)
 
 
     for(int k=0; k<len/2; k+=step) {
-			//cilk_spawn recombine(dc1, dc2, k, step, len);
       double complex twiddle = rou[k]*dc2[2*k + step];
 
       dc1[k] = dc2[2*k] + twiddle;
       dc1[k + len/2] = dc2[2*k] - twiddle;
     }
-	//	cilk_sync;
 }
 void fft(double complex *in, double complex *out, int len)
 {

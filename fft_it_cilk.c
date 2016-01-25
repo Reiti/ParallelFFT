@@ -135,6 +135,24 @@ void loop_helper(double complex *in, double complex *out, int len, int k, int i)
     }
 }
 
+void loop_helper_dq(double complex *in, double complex *out, int len, int i, int from, int to)
+{
+  if((to - from) <= 64) {
+    for(int k=from; k<to; k++) {
+      double complex omega = cexp(-2*k*PI*I/i);
+      for(int j = 0; j < len/i; j++) {
+          double complex twiddle = omega * out[j*i + k + i/2];
+          out[j*i + k + i/2] = out[j*i + k] - twiddle;
+          out[j*i + k] = out[j*i + k] + twiddle;
+        }
+    }
+  }
+  else {
+    cilk_spawn loop_helper_dq(in, out, len, i, from, from + (to - from)/2);
+    cilk_spawn loop_helper_dq(in, out, len, i, from + (to - from)/2, to);
+  }
+}
+
 
 void fft(double complex *in, double complex *out, int len)
 {
@@ -145,22 +163,8 @@ void fft(double complex *in, double complex *out, int len)
     }
 
    for(int i = 2; i <= len; i *= 2)  {
-     if(len/i <= 512) { //cutoff
-       for(int k = 0; k < i/2; k++) {
-         double complex omega = cexp(-2*k*PI*I/i);
-         for(int j = 0; j < len/i; j++) {
-             double complex twiddle = omega * out[j*i + k + i/2];
-             out[j*i + k + i/2] = out[j*i + k] - twiddle;
-             out[j*i + k] = out[j*i + k] + twiddle;
-           }
-       }
-     }
-     else {
-        for(int k = 0; k < i/2; k++) {
-          cilk_spawn loop_helper(in, out, len, k, i);
-        }
+        cilk_spawn loop_helper_dq(in, out, len, i, 0, i/2);
         cilk_sync;
     }
-  }
 
 }
