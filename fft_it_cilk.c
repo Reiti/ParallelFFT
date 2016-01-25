@@ -132,7 +132,7 @@ void loop_helper(double complex *in, double complex *out, int len, int k, int i)
       double complex twiddle = omega * out[j*i + k + i/2];
       out[j*i + k + i/2] = out[j*i + k] - twiddle;
       out[j*i + k] = out[j*i + k] + twiddle;
-    }   
+    }
 }
 
 
@@ -145,9 +145,22 @@ void fft(double complex *in, double complex *out, int len)
     }
 
    for(int i = 2; i <= len; i *= 2)  {
-        for(int k = 0; k < i/2; k++) {  //TODO: Implement threshold for sequentiality (or chunksizes, whichever is faster)
+     if(len/i <= 512) { //cutoff
+       for(int k = 0; k < i/2; k++) {
+         double complex omega = cexp(-2*k*PI*I/i);
+         for(int j = 0; j < len/i; j++) {
+             double complex twiddle = omega * out[j*i + k + i/2];
+             out[j*i + k + i/2] = out[j*i + k] - twiddle;
+             out[j*i + k] = out[j*i + k] + twiddle;
+           }
+       }
+     }
+     else {
+        for(int k = 0; k < i/2; k++) {
           cilk_spawn loop_helper(in, out, len, k, i);
         }
         cilk_sync;
     }
+  }
+
 }
