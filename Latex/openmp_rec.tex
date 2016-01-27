@@ -22,7 +22,7 @@ Only a small change to the calling code of the fft, as well as the way the recur
   #pragma omp taskwait
 \end{lstlisting}
 
-\textbf{Description of #pragma statements}
+\textbf{Description of \#pragma statements}
 \begin{lstlisting}
 #pragma omp parallel shared(timeUsed, in, out, len)
 \end{lstlisting}
@@ -51,4 +51,4 @@ The following graph shows the speedup relative to our fastest sequential impleme
 \includegraphics{rec_openmp_speedup.png}
 
 What we can see here is that the speedup for larger amount of cores depends especially on the amount of data supplied.
-The drop in speedup after about 2^{23}$ is probably due to the rising overhead associated with managing the tasks created by the program.
+The drop in speedup after about \(2^{23}\) is probably due to the rising overhead associated with managing the tasks created by the program.
