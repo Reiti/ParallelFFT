@@ -1,4 +1,4 @@
-\subsection{Implementation}
+\subsubsection{Implementation}
 
 Only a small change to the calling code of the fft, as well as the way the recursive calls are made is needed to adapt the recursive implementation to use OpenMP.
 
@@ -22,7 +22,7 @@ Only a small change to the calling code of the fft, as well as the way the recur
   #pragma omp taskwait
 \end{lstlisting}
 
-\textbf{Description of #pragma statements}
+\textbf{Description of \#pragma statements}
 \begin{lstlisting}
 #pragma omp parallel shared(timeUsed, in, out, len)
 \end{lstlisting}
@@ -45,10 +45,20 @@ this task, and all further tasks created by it, will be executed immediately by 
 \end{lstlisting}
 Tells OpenMP to wait here until the two tasks created above are completed. This is needed to ensure the correct order of execution for the Fast Fourier Transform.
 
-\subsection{Performance}
-\subsection{Speedup}
-The following graph shows the speedup relative to our fastest sequential implementation.
-\includegraphics{rec_openmp_speedup.png}
+\subsubsection{Performance}
+The following graphs show the speedup relative to our fastest sequential implementation.
+
+Average speedup:
+
+\includegraphics[width=\textwidth]{omp_rec_avg.png}
+
+\pagebreak
+Best observered speedup:
+
+\includegraphics[width=\textwidth]{omp_rec_best.png}
 
 What we can see here is that the speedup for larger amount of cores depends especially on the amount of data supplied.
-The drop in speedup after about 2^{23}$ is probably due to the rising overhead associated with managing the tasks created by the program.
+The greater the amount of data supplied to the algorithm, the greater the amount of tasks created by the program. Further down the recursion tree this leads to the creation of
+a large number of tasks, for which there is very little to compute. This would lead to a slowdown because of the overhead associated with switching threads and assigning tasks to threads.
+We tried to mitigate this effect by introducing the cutoff value. 1024 was chosen as the value, that delivered the best results during testing. Larger cutoff values led to higher amounts of computation to be done and thus lower speedups overall.
+But even with this cutoff there is a drop in speedup after \(2^{23}\) which seems to be the point at which the thread scheduling overhead takes over again.
