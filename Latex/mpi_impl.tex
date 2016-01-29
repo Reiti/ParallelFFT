@@ -19,19 +19,20 @@ if(rank +i/2 < i){
 }
 \end{lstlisting}
 This basicly sends information to the processor, which is supposed to calculated the odd part of rank's array. 
+
 \subsection{additional implementation}
+The algorithm we use lets some processors just wait till the lower rank processors are done. So we tried to avoid that and let all processors, which aren't working on the second ('k'-)loop, help each other in the inner ('j'-)loop. In theory this would let to the result of linear speedup, but sadly MPI\_Scatter and MPI\_Gather are super slow. We also only benchmarked method \textit{help2}. \textit{help} uses MPI\_Send/Recv but does the equivalent. In early testing we just proved that 'advanced' MPI functions deliver better performance, as told in the lecture.
 
-The algorithm we use lets some processors just wait till the lower rank processors are done. So we tried to avoid that and let all processors, which aren't working on the second ('k'-)loop, help each other in the inner ('j'-)loop. In theory this would let to the result of linear speedup, but sadly MPI\_Scatter and MPI\_Gather are super slow. We also only benchmarked method \textit{help2}. \textit{help} only uses MPI\_Send/Recv but does the equivalent. In early testing we just proved that 'advanced' MPI functions deliver better performance, as told in the lecture.
-
-\subsection{Performance}
-
-Since we need a cores amount of a power of two, we chose 32 jupiter hosts and evenly spread the cores. We didn't bother comparing e.g. 8 cores on one node and 1 core per 8 nodes, because we noticed some strong time differences in the early testphase. \newline
-Here is a graph trying to show the relation between the time MPI\_Send and MPI\_Recv needs in relation to len/2 random iterations (max iterations of inner loop):
+\subsection{Expectation}
+Since we need a cores amount of a power of two, we chose 32 jupiter hosts and evenly spread the cores. We didn't bother comparing e.g. 8 cores on one node and 1 core per 8 nodes, because we noticed some strong communication time differences in the early test phase. We visualized this by using 64 and 128 cores (2 and 4 cores per node). We declared 256 as unnecessary, since the two powers of two before shows our point.\newline
+Here is a graph trying to show the relation between the time MPI\_Send and MPI\_Recv and len/2 random double complex iterations (max iterations of inner loop) need:
 \begin{center}
 \includegraphics[width=\textwidth]{MPI_sr}
 \end{center}
-Communication between cores on the same node is obviously far slower. We do not know why there's this slope at 18-19. It always occurs and even on our speedup graphs you can see a hike around this area. 
-\newline
+Communication between cores on the same node is obviously far slower because of the cache. We do not know why there's this slope at 18-19. It occurs on any of our benchmarks attempts and even on our speedup graphs you can see a hike around this area. 
+
+\subsection{Performance}
+
 Average speedup:
 \begin{center}
 \includegraphics[width=\textwidth]{MPI_med}
@@ -41,7 +42,8 @@ Our best observed speedup:
 \includegraphics[width=\textwidth]{MPI_best}
 \end{center}
 
-Generally our MPI method loses a lot of time during the send and receive phase, especially at low exponents, where all iterations together are faster than the splits. As we kind of expected, most curves are rising in speedup. Similar to openMP and cilk but much smoother. This is most likely because of our simple split method which just works at the beginning and then lets all the cores do the rest without hard disturbance (fewer cores/node \(\implies\) fewer cache problems). \newline
+Generally our MPI method wastes a lot of time during the send and receive phase, especially at low exponents, where all iterations together are faster than the splits. As we kind of expected, most curves are rising in speedup. Similar to openMP and cilk but much smoother. This is most likely because of our simple split method which just works at the beginning and then lets all the cores do the rest without hard disturbance. Explained by fewer cores/node which leads to fewer cache problems. \newline
+Interesting and expected is also, that 64 and 128 (especially 64) cores are trying to catch up on fewer cores. After the much slower send and recv phase they still got way more cores to calculate the rest. There is no reasonable benchmark data for \(2^{25}\) numbers with 128 cores, because the MPI-Program got kill signals for completely unexplainable resaons. \newline
 
 
 We also include the best-case speedup-graph of our \textit{help2} method:
@@ -49,10 +51,10 @@ We also include the best-case speedup-graph of our \textit{help2} method:
 \includegraphics[width=\textwidth]{MPI_help2}
 \end{center}
 
-Out of hundred testcases there was one remarkable good one at \(2^{22}\) numbers. Even though MPI\_Scatter/Gather seem to be slow, which can be seen at the beginning of the graph in comparison to the other MPI graphs, it still catches up very nice at larger data amounts.
+Out of hundred testcases there was one remarkable good one at \(2^{22}\) numbers. Even though MPI\_Scatter/Gather seem to be slow, which can be seen at the beginning of the graph in comparison to the other MPI graphs, it still catches up very nicly at larger data amounts.
    
-\subsection{Expectation}
-We would expect an approximate linear speedup for large enough numbers. We tried to come up with a formula
+\subsection{mathematical discussion}
+We would expect an approximate linear speedup for large enough numbers. We tried to come up with a formula.
 
 There are \(2^{p}\) cores and array has length = \(2^{n}\)\newline
 A ... average time needed for len/2 (=\(2^{n-1}\)) operations\newline
@@ -60,22 +62,22 @@ B... average time needed for MPI\_Send/Recv of \(2^{n}\) elements\newline\newlin
 \begin{math}
 T(n, p) = A + \sum_{i=1}^{p} {A \over 2^i} + (n - p) {A \over 2^p} + p*B 
 = A (1 + \sum_{i=1}^{p} {1 \over 2^i} + {n - p \over 2^p}) + p*B
-\end{math}\newline
+\end{math}\newline\newline
 For big enough n and p:\newline
 \begin{math}
 T(n, p) \approx A (2 + {n - p \over 2^p})(+ p * B)
-\end{math}\newline
+\end{math}\newline\newline
 This should be smaller than the sequential algorithm: \newline
 \begin{math}
 T(n, p) \approx A (2 + {n - p \over 2^p})+ p * B \leq T(n) = n * A
 \implies {n - p \over 2^p} + {p*B \over A} \leq n - 2
-\end{math}\newline
+\end{math}\newline\newline
 Assuming A and B are \(O(n)\):\newline
 \begin{math}
 \implies {n - p \over 2^p} + p \leq n - 2 
 \implies {p*2^p + 2^{p+1} -p \over 2^p +1} \leq n
 \implies O(p) \leq O(n)
-\end{math}\newline
+\end{math}\newline\newline
 This is exactly our specification, so it is right for at least large n and p. That means according to our approximative formular \newline
 \begin{math}
 T(n, p) \approx A (2 + {n - p \over 2^p})
