@@ -14,8 +14,8 @@
 #include "prints.h"
 #include "numgenparser.h"
 #include <assert.h>
-#include "/opt/NECmpi/gcc/1.3.1/include/mpi.h"
-//#include <mpi/mpi.h>
+//#include "/opt/NECmpi/gcc/1.3.1/include/mpi.h"
+#include <mpi/mpi.h>
 #define PI 3.14159265358979323846
 
 
@@ -38,11 +38,11 @@ void frees(void){
 	free(in);
 	if(out !=NULL)
 	free(out);
-
+	MPI_Finalize();
 }
 int main(int argc, char *argv[])
 {
-	
+
 	atexit(frees);
     char c;
 	int p=0;
@@ -51,14 +51,17 @@ int main(int argc, char *argv[])
 	int b=0;
 	int iter=1;
 	int r=0;
+	int u=0;
 	MPI_Init(&argc, &argv);
 	MPI_Group group;
 	MPI_Comm_group(MPI_COMM_WORLD, &group);
 	MPI_Comm_create(MPI_COMM_WORLD, group, &mycomm);
 	MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 	MPI_Comm_size(MPI_COMM_WORLD, &size);
+
 	assert(ispow2(size));
-	while((c =getopt(argc, argv, "pf:mhab:r"))!=-1){
+
+	while((c =getopt(argc, argv, "pf:mhab:ru"))!=-1){
 		switch(c){
 			case 'p':
 				p=1;
@@ -85,6 +88,9 @@ int main(int argc, char *argv[])
 			case 'r':
 				r=1;
 				break;
+			case 'u':
+				u=1;
+				break;
 			default:
 				break;
 		}
@@ -102,6 +108,7 @@ int main(int argc, char *argv[])
 	if(p)
 		(void)printf("Size = %d... I am Processor rank: %d\n", size, rank);
 	
+
 
 		len = getNumAmount(fin);
 
@@ -135,40 +142,53 @@ int main(int argc, char *argv[])
 	assert(len >= size);
 	
 	if(r){
-		int z;
+		int z=0;
 		double timed=0.0;
 		int rounded=0;
-		for(int i =0;i<250;i++){
+		int min=10000000;
+		for(int i =0;i<150;i++){
 			timed= MPI_Wtime();
 			sprayData(2, len);
 			timed = MPI_Wtime()-timed;
-			z+=(int)(timed * 1000000);
+			int cur =(int)(timed * 1000000);
+			z+=cur;
+			if(min >cur)min=cur;
 		}
-		z= z /250;
+		z= z /150;
 		MPI_Reduce(&z, &rounded, 1, MPI_INT,
 				 MPI_MAX, 0, MPI_COMM_WORLD);
-		if(rank==0)(void)printf("%d Microseconds\n", rounded);
-		z=0;
-		for(int tt =0;tt< 250;tt++){
-			int i=2;int k=0;
-			timed = MPI_Wtime();
-			double complex omega = cexp(-2*k*PI*I/i);
-			for(int j = 0;j < len/i; j++){
-				double complex twiddle = omega * out[j*i + k + i/2];
-        			out[j*i + k + i/2] = out[j*i + k] - twiddle;
-            			out[j*i + k] = out[j*i + k] + twiddle;
-			}
-			timed = MPI_Wtime()- timed;
-			z+=(int)(timed * 1000000);			
-		}
-		z= z /250;
-		MPI_Reduce(&z, &rounded, 1, MPI_INT,
-				 MPI_MAX, 0, MPI_COMM_WORLD);
-		if(rank==0)(void)printf("%d Microseconds\n", rounded);
+		if(rank==0)(void)printf("%d;%d\n", rounded, min);
 		
-		if(rank==0)(void)printf("at exp %d\n", lg(len));
 		MPI_Finalize();
 		return 0;
+		}
+		if(u){
+			int z=0;;
+			double timed=0.0;
+			int rounded=0;
+			int min=10000000;
+			for(int tt =0;tt< 150;tt++){
+				int i=2;int k=0;
+				timed = MPI_Wtime();
+				double complex omega = cexp(-2*k*PI*I/i);
+				for(int j = 0;j < len/i; j++){
+					double complex twiddle = omega * out[j*i + k + i/2];
+        				out[j*i + k + i/2] = out[j*i + k] - twiddle;
+            				out[j*i + k] = out[j*i + k] + twiddle;
+				}
+				timed = MPI_Wtime()- timed;
+				int cur =(int)(timed * 1000000); 
+				//(void)printf("%d-", cur);
+				if(min >cur)min =cur;
+				z+=cur;			
+			}
+			z= z /150;
+			MPI_Reduce(&z, &rounded, 1, MPI_INT,
+					 MPI_MAX, 0, MPI_COMM_WORLD);
+			if(rank==0)(void)printf("%d;%d\n", rounded, min);
+			MPI_Finalize();
+			return 0;
+			//if(rank==0)(void)printf("at exp %d\n", lg(len));			
 		}
 
 	if(p && rank ==0){
@@ -177,6 +197,8 @@ int main(int argc, char *argv[])
 	int msecs=0;
 	double tmeasure = 0.0;
 	MPI_Barrier(MPI_COMM_WORLD);
+
+
 for(int i=0;i< iter;i++){
 	double tpast= MPI_Wtime();
 	  fft(len);
@@ -206,7 +228,6 @@ for(int i=0;i< iter;i++){
 	MPI_Barrier(MPI_COMM_WORLD);
 	fclose(fin);
 	MPI_Comm_free(&mycomm);		
-	MPI_Finalize();
 	return 0;
 }
 
@@ -291,6 +312,8 @@ void help(int len, int i){
 			MPI_Send(out+i*t*tbd+k, len-i*t*tbd-k, MPI_DOUBLE_COMPLEX,
 					k, k,MPI_COMM_WORLD);
 		}
+		if(i <= size && rank < i)
+		sprayData(i, len);
 	}else{
 		for(int k =rank; k < i/2; k+=size) {
 			double complex omega = cexp(-2*k*PI*I/i);
@@ -328,7 +351,8 @@ void help2(int len, int i){
 		MPI_Gather(tmp, len/newsize, MPI_DOUBLE_COMPLEX,
 					out, len/newsize, MPI_DOUBLE_COMPLEX,0,  mycomm);	
 		free(tmp);
-
+		if(i <= size && rank < i)
+		sprayData(i, len);
 	}else{
 		for(int k =rank; k < i/2; k+=size) {
 			double complex omega = cexp(-2*k*PI*I/i);
@@ -338,6 +362,7 @@ void help2(int len, int i){
     	        out[j*i + k] = out[j*i + k] + twiddle;
 			}
 		}
+
 	}
 
 }
@@ -345,9 +370,11 @@ void help2(int len, int i){
 void sprayData(int i, int len){
 	MPI_Status status;
 	if(rank +i/2 < i){
+
 		MPI_Send(out, len, MPI_DOUBLE_COMPLEX,
 				rank + i/2, rank,MPI_COMM_WORLD);
 	}else{
+
 		MPI_Recv(out, len, MPI_DOUBLE_COMPLEX,
 			 	rank - i/2, rank-i/2, MPI_COMM_WORLD, &status);
 	}	
