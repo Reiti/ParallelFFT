@@ -1,4 +1,4 @@
-\subsection{Main implementation}
+	\subsubsection{Main implementation}
 After many tries and research we came up with a really simple method of dealing with the MPI problem. Our method needs in addition to the number of elements also a processor amount of a power of two. We used the iterative FFT method as base. Since the FFT splits the array into even and odd parts, we used this to our advantage. There are actually just two notable parts of the algorithm which are doing the "MPI-things":
 \begin{lstlisting}
 for(int k=rank;k < i/2;k+=size)
@@ -20,7 +20,7 @@ if(rank +i/2 < i){
 \end{lstlisting}
 This basicly sends information to the processor, which is supposed to calculated the odd part of rank's array. 
 
-\subsection{additional implementation}
+\subsubsection{additional implementation}
 The algorithm we use lets some processors just wait till the lower rank processors are done. So we tried to avoid that and let all processors, which aren't working on the second ('k'-)loop, help each other in the inner ('j'-)loop. In theory this would let to the result of linear speedup, but sadly MPI\_Scatter and MPI\_Gather are super slow. We also only benchmarked method \textit{help2}. \textit{help} uses MPI\_Send/Recv but does the equivalent. In early testing we just proved that 'advanced' MPI functions deliver better performance, as told in the lecture.
 
 \subsection{Expectation}

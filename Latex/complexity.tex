@@ -1,1 +1,23 @@
-O(log(n)*n)
+\subsubsection{iterative method}
+\begin{lstlisting}
+   for(int i = 2; i <= len; i *= 2)
+        for(int k = 0; k < i/2; k++)
+            for(int j = 0; j < len/i; j++)
+
+\end{lstlisting}
+Simple to analize:
+\begin{math}
+O(log(n) * i/2 * n/i) = O(log(n)*n)
+\end{math}
+\subsubsection{recursive method}
+\begin{lstlisting}
+   if(step >= len)
+      return;
+    fft_help(dc2, dc1, len, step*2);
+    fft_help(dc2+step, dc1+step, len, step*2);
+    for(int k=0; k<len/2; k+=step)
+\end{lstlisting}
+\begin{math}
+O(2*log(n-1) * n) = O(log(n)*n)
+\end{math}
+Visualized with memory pattern in 1.3
