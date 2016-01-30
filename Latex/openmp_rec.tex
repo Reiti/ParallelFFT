@@ -64,5 +64,5 @@ a large number of tasks, for which there is very little to compute. This would l
 We tried to mitigate this effect by introducing the cutoff value. 1024 was chosen as the value, that delivered the best results during testing. Larger cutoff values led to higher amounts of computation to be done and thus lower speedups overall.
 But even with this cutoff there is a drop in speedup after \(2^{23}\) which seems to be the point at which the thread scheduling overhead takes over again.
 
-Another (and probably the largest) factor that limits the speedup is cache access time. The data accesses in the FFT algorithm are all spaced fairly far apart, which causes elements that are needed in a task to be stored so far apart in memory,
+Another (and probably the largest) factor that limits the speedup is memory access time. The data accesses in the FFT algorithm are all spaced fairly far apart, which causes elements that are needed in a task to be stored so far apart in memory,
 that they will be put into different cache lines. This in turn leads to more lines being fetched from memory, as well as more cache misses.
