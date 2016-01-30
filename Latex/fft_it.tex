@@ -1,0 +1,2 @@
+We implemented an inplace bottom-up FFT. We fill the array in bit reversed order. This splits the array in odd and even parts, before the algorithm starts the actual FFT. That is called \textit{In-place splitting}. The in-place splitted array also represents the FFT of all single elements, which is the element itself. The three loops then are combining the transforms in place. 
+
