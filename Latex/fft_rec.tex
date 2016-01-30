@@ -1,0 +1,2 @@
+Basicly our implementation calculates FFT for the odd and even part and stores the result in one array, recursive calls later use these previous calculations, to calculate further. That is why the two arrays get swapped. It is easily to demonstrate if you draw youself the tree of recursive calls. Each node with two children gets their needed FFT information, calculated by the children, stored in array 1. Each node self stores the calculated information in array 2, which
+is array 1 in all parents and the output array in the original call. 

@@ -1,4 +1,4 @@
-	\subsubsection{Main implementation}
+	\subsubsection{Main Implementation}
 After many tries and research we came up with a really simple method of dealing with the MPI problem. Our method needs in addition to the number of elements also a processor amount of a power of two. We used the iterative FFT method as base. Since the FFT splits the array into even and odd parts, we used this to our advantage. There are actually just two notable parts of the algorithm which are doing the "MPI-things":
 \begin{lstlisting}
 for(int k=rank;k < i/2;k+=size)
@@ -20,7 +20,7 @@ if(rank +i/2 < i){
 \end{lstlisting}
 This basicly sends information to the processor, which is supposed to calculated the odd part of rank's array. 
 
-\subsubsection{additional implementation}
+\subsubsection{Additional Implementation}
 The algorithm we use lets some processors just wait till the lower rank processors are done. So we tried to avoid that and let all processors, which aren't working on the second ('k'-)loop, help each other in the inner ('j'-)loop. In theory this would let to the result of linear speedup, but sadly MPI\_Scatter and MPI\_Gather are super slow. We also only benchmarked method \textit{help2}. \textit{help} uses MPI\_Send/Recv but does the equivalent. In early testing we just proved that 'advanced' MPI functions deliver better performance, as told in the lecture.
 
 \subsection{Expectation}
@@ -33,6 +33,7 @@ Communication between cores on the same node is obviously far slower because of 
 
 \subsection{Performance}
 
+We did 100 repetitions and took the median as 'average' speedup, since some testcases sometimes completely destroyed the result. Further more the median wasn't always that far apart from the minimum.\newline 
 Average speedup:
 \begin{center}
 \includegraphics[width=\textwidth]{MPI_med}
@@ -53,7 +54,7 @@ We also include the best-case speedup-graph of our \textit{help2} method:
 
 Out of hundred testcases there was one remarkable good one at \(2^{22}\) numbers. Even though MPI\_Scatter/Gather seem to be slow, which can be seen at the beginning of the graph in comparison to the other MPI graphs, it still catches up very nicly at larger data amounts.
    
-\subsection{mathematical discussion}
+\subsection{Mathematical Discussion}
 We would expect an approximate linear speedup for large enough numbers. We tried to come up with a formula.
 
 There are \(2^{p}\) cores and array has length = \(2^{n}\)\newline
