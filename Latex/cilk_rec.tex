@@ -3,9 +3,9 @@ To adapt the trivial recursive implementation to use cilk, only two new keywords
 
 \textbf{Recursive calls:}
 \begin{lstlisting}
-  cilk\_spawn fft_help(dc2, dc1, len, step*2);
-  cilk\_spawn fft_help(dc2+step, dc1+step, len, step*2);
-  cilk\_sync;
+  cilk_spawn fft_help(dc2, dc1, len, step*2);
+  cilk_spawn fft_help(dc2+step, dc1+step, len, step*2);
+  cilk_sync;
 \end{lstlisting}
 
 cilk\_spawn tells cilk that the function call (here the recursive calls to fft\_help) can be executed in parallel to the calling function. It is important to note that while the cilk\_spawn keyword permits parallelism, it does not explicitly create a thread. It tells the runtime that the part after the keyword can be executed by another worker. 
