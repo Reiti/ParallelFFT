@@ -1,6 +1,11 @@
-\subsubsection{OpenMP vs. cilk}
+\subsection{OpenMP vs. cilk}
 By trying out the two frameworks we came to the following conclusion:
 
 Cilk is the easier of the two to add simple parallelization to a recursive program. Programs that do not have a recursive structure are harder to parallelize effectively, because the iterative structure has to be rewritten. 
 
-OpenMP is our framework of choice for everything else, because it provides control structures for parallelizing recursive and iterative programs, as well as better control over the scheduling of tasks and other variables of the parallelization. 
+OpenMP is our framework of choice for everything else, because it provides control structures for parallelizing recursive and iterative programs, as well as better control over the scheduling of tasks and other variables of the parallelization.
+\subsection{MPI}
+As expected, MPI brought the best result, even though it did not bring linear speedup at all. Even our mathematical attempt did not turn out to be linear.
+
+\subsection{Overall}
+Our algorithms loses the most time with memory accesses. We could see this phenomena with our MPI solution, where cores were on different nodes, which delivered far better results in comparison to programs started on the same shared memory.  
