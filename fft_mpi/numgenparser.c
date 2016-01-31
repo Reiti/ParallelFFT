@@ -3,18 +3,18 @@
 #include <stdlib.h>
 #include <string.h>
 #include <complex.h>
-int getNumAmount(FILE * in){
-	char line[100];
-	(void)fgets(line, 100, in);
-	char* endptr;
-	line[strlen(line)-1] = '\0';
-	int len  = strtol(line, &endptr, 10);
-	//(void)printf("%s : %d\n", line, len);
-	if(*endptr != '\0' || len < 0) {
-   	 	(void)fprintf(stderr, "error while reading numberamount\n");
-		return -1;
-	}
-	return len;
+int getNumAmount(FILE * in) {
+    char line[100];
+    (void)fgets(line, 100, in);
+    char* endptr;
+    line[strlen(line)-1] = '\0';
+    int len  = strtol(line, &endptr, 10);
+    //(void)printf("%s : %d\n", line, len);
+    if(*endptr != '\0' || len < 0) {
+        (void)fprintf(stderr, "error while reading numberamount\n");
+        return -1;
+    }
+    return len;
 }
 
 static int parse_number(char* numstring) {
@@ -22,18 +22,18 @@ static int parse_number(char* numstring) {
     int thenumber = strtol(numstring, &endptr, 10);
     if(*endptr != '\0') {
         (void)fprintf(stderr, "error while reading number\n");
-		exit(1); 
+        exit(1);
     }
     return thenumber;
 }
 
-int getNumbers(complex double *in, FILE* fin){
-	int counter=0;
-	char line[100];
-	while(fgets(line, 6, fin)){
-		line[strlen(line)-1] = '\0';
-		in[counter] = parse_number(line);
-		counter++;
-	}	
-	return counter;
+int getNumbers(complex double *in, FILE* fin) {
+    int counter=0;
+    char line[100];
+    while(fgets(line, 6, fin)) {
+        line[strlen(line)-1] = '\0';
+        in[counter] = parse_number(line);
+        counter++;
+    }
+    return counter;
 }
